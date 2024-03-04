@@ -254,7 +254,7 @@ async def create_tag(interaction: discord.Interaction, tag_nom: str, texte: str)
 async def remove_tag(interaction: discord.Interaction, tag_nom: str):
     tags = load_tags()
     user_id = str(interaction.user.id)
-    if tag_nom in tags and tags[tag_nom]["creator_id"] == user_id:
+    if tag_nom in tags or tags[tag_nom]["creator_id"] == user_id or interaction.user.guild_permissions.administrator:
         del tags[tag_nom]
         save_tags(tags)
         embed = discord.Embed(description=f"✅ **Bravo!｜** Le tag `{tag_nom}` a été supprimé avec succès !", color=discord.Color.green())
@@ -279,7 +279,7 @@ async def list_tags(interaction: discord.Interaction):
         else:
             creator_name = "Utilisateur Inconnu"
         embed.add_field(name=f"{tag_nom}", value=f"\n`Auteur` : {creator_name}", inline=False)
-        embed.set_footer(text=f"Utilisez `/tag new` pour créer un nouveau tag.")
+        embed.set_footer(text=f"Utilisez /tag new pour créer un nouveau tag.")
     await interaction.response.send_message(embed=embed)
 
 
