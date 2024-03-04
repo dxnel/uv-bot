@@ -2,9 +2,8 @@
 
 ![](https://dxnuv.github.io/uv-bot/images/uvpng-180x.png)
 
-[uv]bot est un bot discord crée exclusivement pour le serveur privé "ultraviolet [uv]" et présente de nombreuses fonctionnalitées essentielles.
-
-
+⚙️ Ce bot offre à ton serveur un max de ohio rizz pour faire trembler les minettes 🥵🫨. \
+🚫 Bot exclusif au serveur `ultraviolet [uv]`.
 
 ## ⚙️ Fonctionnalités
 Liste des fonctionnalistés du bot.
