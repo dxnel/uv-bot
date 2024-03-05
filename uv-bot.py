@@ -222,29 +222,36 @@ def save_tags(tags):
     with open('tags.json', 'w') as file:
         json.dump(tags, file, indent=4)
 
-tag_group = app_commands.Group(name="tag", description="Manipule les tags.")
+tag_group = app_commands.Group(name="tag", description="Commandes liés aux tags")
 
 @tag_group.command(name="use", description="Utilise un tag enregistré.")
 @app_commands.describe(tag_nom="Nom du tag")
 async def use_tag(interaction: discord.Interaction, tag_nom: str):
     tags = load_tags()
     if tag_nom in tags:
-        texte = tags[tag_nom]["texte"]
+        tag_data = tags[tag_nom]
+        if tag_data["private"]:
+            user_id = str(interaction.user.id)
+            if user_id != tag_data["creator_id"]:
+                embed = discord.Embed(description="❌ **Erreur｜** Vous n'êtes pas autorisé à utiliser ce tag privé.", color=discord.Color.red())
+                await interaction.response.send_message(embed=embed)
+                return
+        texte = tag_data["texte"]
         await interaction.response.send_message(texte)
     else:
         embed = discord.Embed( description="❌ **Erreur｜** Ce tag n'existe pas.", color=discord.Color.red())
         await interaction.response.send_message(embed=embed)
 
 @tag_group.command(name="new", description="Crée un nouveau tag.")
-@app_commands.describe(tag_nom="Nom du tag", texte="Texte intégré au tag")
-async def create_tag(interaction: discord.Interaction, tag_nom: str, texte: str):
+@app_commands.describe(tag_nom="Nom du tag", texte="Texte intégré au tag", private="Indique si le tag est privé (True ou False, par défaut False)")
+async def create_tag(interaction: discord.Interaction, tag_nom: str, texte: str, private: bool = False):
     tags = load_tags()
     user_id = str(interaction.user.id)
     if tag_nom in tags:
         embed = discord.Embed(description=f"❌ **Erreur｜** Le tag `{tag_nom}` existe déjà.", color=discord.Color.red())
         await interaction.response.send_message(embed=embed)
         return
-    tags[tag_nom] = {"texte": texte, "creator_id": user_id}
+    tags[tag_nom] = {"texte": texte, "creator_id": user_id, "private": private}
     save_tags(tags)
     embed = discord.Embed(description=f"✅ **Bravo!｜** Le tag `{tag_nom}` a été créé avec succès !", color=discord.Color.green())
     await interaction.response.send_message(embed=embed)
@@ -273,21 +280,24 @@ async def remove_tag(interaction: discord.Interaction, tag_nom: str):
 async def list_tags(interaction: discord.Interaction):
     tags = load_tags()
     if not tags:
-        embed = discord.Embed(title="Liste des tags", description="Aucun tag n'a été créé 😔. Utilisez `/tag new` pour créer un nouveau tag.", color=discord.Color.from_rgb(193, 168, 233))
+        embed = discord.Embed(title="Liste des tags", description="Aucun tag n'a été créé 😔. Utilisez `/tag new` pour créer un nouveau tag.", color=discord.Color.from_rgb(247, 236, 160 ))
         await interaction.response.send_message(embed=embed)
         return
     sorted_tags = sorted(tags.items())  
-    embed = discord.Embed(title="Liste des Tags", color=discord.Color.from_rgb(193,168,233))
+    embed = discord.Embed(title="Liste des tags", color=discord.Color.from_rgb(247, 236, 160 ))
     for tag_nom, data in sorted_tags:
         creator = interaction.guild.get_member(int(data["creator_id"]))
         if creator:
             creator_name = creator.display_name
         else:
             creator_name = "Utilisateur Inconnu"
-        embed.add_field(name=f"{tag_nom}", value=f"\n`Auteur` : {creator_name}", inline=False)
+        if data["private"]:
+            lock_icon = f"`🔒 Privé ` "
+        else:
+            lock_icon = f"`🔓 Publique ` "
+        embed.add_field(name=f"{tag_nom}  {lock_icon}", value=f"\n`Auteur` : {creator_name}", inline=False)
         embed.set_footer(text=f"Utilisez /tag new pour créer un nouveau tag.")
     await interaction.response.send_message(embed=embed)
-
 
 @bot.tree.command(name="customemoji", description="Affiche l'image d'un emoji personnalisé.")
 @app_commands.describe(emoji_nom="Nom de l'emoji personnalisé")
