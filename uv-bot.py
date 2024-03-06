@@ -2,6 +2,8 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 from datetime import datetime
+import Paginator
+import asyncio
 import json
 import requests
 import base64
@@ -243,15 +245,15 @@ async def use_tag(interaction: discord.Interaction, tag_nom: str):
         await interaction.response.send_message(embed=embed)
 
 @tag_group.command(name="new", description="Crée un nouveau tag.")
-@app_commands.describe(tag_nom="Nom du tag", texte="Texte intégré au tag", private="Indique si le tag est privé (True ou False, par défaut False)")
-async def create_tag(interaction: discord.Interaction, tag_nom: str, texte: str, private: bool = False):
+@app_commands.describe(tag_nom="Nom du tag", texte="Texte intégré au tag", privé="Tag accessible par tous (ou non)")
+async def create_tag(interaction: discord.Interaction, tag_nom: str, texte: str, privé: bool = False):
     tags = load_tags()
     user_id = str(interaction.user.id)
     if tag_nom in tags:
         embed = discord.Embed(description=f"❌ **Erreur｜** Le tag `{tag_nom}` existe déjà.", color=discord.Color.red())
         await interaction.response.send_message(embed=embed)
         return
-    tags[tag_nom] = {"texte": texte, "creator_id": user_id, "private": private}
+    tags[tag_nom] = {"texte": texte, "creator_id": user_id, "private": privé}
     save_tags(tags)
     embed = discord.Embed(description=f"✅ **Bravo!｜** Le tag `{tag_nom}` a été créé avec succès !", color=discord.Color.green())
     await interaction.response.send_message(embed=embed)
@@ -276,16 +278,22 @@ async def remove_tag(interaction: discord.Interaction, tag_nom: str):
         embed = discord.Embed(description="❌ **Erreur｜** Vous n'êtes pas l'auteur de ce tag ou vous n'avez pas les permissions requises.", color=discord.Color.red())
         await interaction.response.send_message(embed=embed)
 
-@tag_group.command(name="list", description="Affiche la liste des tags.")
-async def list_tags(interaction: discord.Interaction):
+@tag_group.command(name="list", description="Affiche l'ensemble des tags.")
+async def tag_list(interaction: discord.Interaction):
     tags = load_tags()
     if not tags:
-        embed = discord.Embed(title="Liste des tags", description="Aucun tag n'a été créé 😔. Utilisez `/tag new` pour créer un nouveau tag.", color=discord.Color.from_rgb(247, 236, 160 ))
+        embed = discord.Embed(title="Liste des tags", description="Aucun tag n'a été créé 😔. Utilisez `/tag new` pour créer un nouveau tag.", color=discord.Color.from_rgb(193,168,233 ))
         await interaction.response.send_message(embed=embed)
         return
-    sorted_tags = sorted(tags.items())  
-    embed = discord.Embed(title="Liste des tags", color=discord.Color.from_rgb(247, 236, 160 ))
-    for tag_nom, data in sorted_tags:
+    
+    sorted_tags = sorted(tags.items()) 
+    pages = []
+    page_content = ""
+    tags_per_page = 5
+    current_page = 1
+    total_pages = (len(sorted_tags) - 1) // tags_per_page + 1
+    
+    for index, (tag_nom, data) in enumerate(sorted_tags, start=1):
         creator = interaction.guild.get_member(int(data["creator_id"]))
         if creator:
             creator_name = creator.display_name
@@ -295,9 +303,14 @@ async def list_tags(interaction: discord.Interaction):
             lock_icon = f"`🔒 Privé ` "
         else:
             lock_icon = f"`🔓 Publique ` "
-        embed.add_field(name=f"{tag_nom}  {lock_icon}", value=f"\n`Auteur` : {creator_name}", inline=False)
-        embed.set_footer(text=f"Utilisez /tag new pour créer un nouveau tag.")
-    await interaction.response.send_message(embed=embed)
+        page_content += f"**{tag_nom}**  {lock_icon}\n`Auteur` : {creator_name}\n\n"
+        if index % tags_per_page == 0 or index == len(sorted_tags):
+            pages.append(discord.Embed(title=f"Liste des tags ({current_page}/{total_pages})", description=page_content , color=discord.Color.from_rgb(193,168,233 )))
+            page_content = ""
+            current_page += 1
+    
+    paginator = Paginator.Simple()
+    await paginator.start(interaction, pages=pages)
 
 @bot.tree.command(name="customemoji", description="Affiche l'image d'un emoji personnalisé.")
 @app_commands.describe(emoji_nom="Nom de l'emoji personnalisé")
