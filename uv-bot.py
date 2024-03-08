@@ -236,13 +236,14 @@ async def use_tag(interaction: discord.Interaction, tag_nom: str):
             user_id = str(interaction.user.id)
             if user_id != tag_data["creator_id"]:
                 embed = discord.Embed(description="❌ **Erreur｜** Vous n'êtes pas autorisé à utiliser ce tag privé.", color=discord.Color.red())
-                await interaction.response.send_message(embed=embed)
+                await interaction.response.send_message(embed=embed, ephemeral=True)  
                 return
         texte = tag_data["texte"]
-        await interaction.response.send_message(texte)
+        await interaction.response.send_message(texte, ephemeral=tag_data["private"])  
     else:
-        embed = discord.Embed( description="❌ **Erreur｜** Ce tag n'existe pas.", color=discord.Color.red())
-        await interaction.response.send_message(embed=embed)
+        embed = discord.Embed(description="❌ **Erreur｜** Ce tag n'existe pas.", color=discord.Color.red())
+        await interaction.response.send_message(embed=embed, ephemeral=True)  
+
 
 @tag_group.command(name="new", description="Crée un nouveau tag.")
 @app_commands.describe(tag_nom="Nom du tag", texte="Texte intégré au tag", privé="Tag accessible par tous (ou non)")
