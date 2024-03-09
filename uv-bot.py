@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 from datetime import datetime
+import time
 import Paginator
 import asyncio
 import json
@@ -15,9 +16,7 @@ intents.message_content = True
 intents.members = True
 intents.presences = True
 
-
 bot = commands.Bot(command_prefix='uv!', intents=intents)
-
 
 @bot.event
 async def on_ready():
@@ -34,9 +33,505 @@ async def on_message(message):
     if "y/n" in message.content:
         await message.add_reaction('⬆️')
         await message.add_reaction('⬇️')
-
     await bot.process_commands(message)
 
+@bot.event
+async def on_message_delete(message):
+    embed = discord.Embed(description=f"Message supprimé sur {message.channel.jump_url}", color=discord.Color.red())
+    embed.set_author(name=message.author.display_name, icon_url=message.author.avatar)
+    embed.add_field(name="Auteur du message", value=f"{message.author} `({message.author.id})`", inline=False)
+    embed.set_footer(text=f"ID : {message.id}")
+    embed.add_field(name="Contenu du message", value=message.content if message.content else "Contenu inconnu", inline=False)
+    
+    send_time = f"<t:{int(message.created_at.timestamp())}:F>"
+    embed.add_field(name="Heure d'envoi", value=send_time, inline=False)
+    
+    config = load_config() 
+    log_channel_id = config.get('log_channel') 
+    if log_channel_id:
+        log_channel = bot.get_channel(log_channel_id)
+        if log_channel:
+            await log_channel.send(embed=embed)
+        else:
+            print("Le salon de logging n'existe pas.")
+    else:
+        print("Le salon de logging n'a pas été défini.")
+
+@bot.event
+async def on_message_edit(before, after):
+    if before.content != after.content:
+        embed = discord.Embed(description=f"Message modifié sur {after.channel.jump_url}", color=discord.Color.from_rgb(193,168,233))
+        embed.set_author(name=after.author.display_name, icon_url=after.author.avatar)
+        embed.add_field(name="Auteur du message", value=f"{after.author} `({after.author.id})`", inline=False)
+        embed.set_footer(text=f"ID : {after.id}")
+        embed.add_field(name="Ancien contenu", value=before.content, inline=False)
+        embed.add_field(name="Nouveau contenu", value=after.content, inline=False)
+    
+        
+        config = load_config() 
+        log_channel_id = config.get('log_channel') 
+        if log_channel_id:
+            log_channel = bot.get_channel(log_channel_id)
+            if log_channel:
+                await log_channel.send(embed=embed)
+            else:
+                print("Le salon de logging n'existe pas.")
+        else:
+            print("Le salon de logging n'a pas été défini.")
+
+@bot.event
+async def on_member_update(before, after):
+    added_roles = set(after.roles) - set(before.roles)
+    removed_roles = set(before.roles) - set(after.roles)
+    if before.display_name != after.display_name:
+        embed = discord.Embed(description=f"{after.mention} `({after.name})` a été mis à jour", color=discord.Color.from_rgb(193,168,233))
+        embed.set_author(name=after.display_name, icon_url=after.avatar)
+        embed.add_field(name="Ancien pseudo", value=before.display_name, inline=False)
+        embed.add_field(name="Nouveau pseudo", value=after.display_name, inline=False)
+        embed.set_footer(text=f"ID : {after.id}")
+        
+        config = load_config() 
+        log_channel_id = config.get('log_channel') 
+        if log_channel_id:
+            log_channel = bot.get_channel(log_channel_id)
+            if log_channel:
+                await log_channel.send(embed=embed)
+            else:
+                print("Le salon de logging n'existe pas.")
+        else:
+            print("Le salon de logging n'a pas été défini.")
+
+    if added_roles:
+        for role in added_roles:
+            embed = discord.Embed(description=f"➕ {after.mention} a été attribué le rôle {role.mention}", color=discord.Color.green())
+            embed.set_author(name=after.display_name, icon_url=after.avatar)
+            embed.set_footer(text=f"ID : {after.id}")
+
+            config = load_config()
+            log_channel_id = config.get('log_channel')
+            if log_channel_id:
+                log_channel = bot.get_channel(log_channel_id)
+                if log_channel:
+                    await log_channel.send(embed=embed)
+                else:
+                    print("Le salon de logging n'existe pas.")
+            else:
+                print("Le salon de logging n'a pas été défini.")
+
+    if removed_roles:
+        for role in removed_roles:
+            embed = discord.Embed(description=f"❌ {after.mention} a été retiré le rôle {role.mention}", color=discord.Color.red())
+            embed.set_author(name=after.display_name, icon_url=after.avatar)
+            embed.set_footer(text=f"ID : {after.id}")
+
+            config = load_config()
+            log_channel_id = config.get('log_channel')
+            if log_channel_id:
+                log_channel = bot.get_channel(log_channel_id)
+                if log_channel:
+                    await log_channel.send(embed=embed)
+                else:
+                    print("Le salon de logging n'existe pas.")
+            else:
+                print("Le salon de logging n'a pas été défini.")
+
+
+@bot.event
+async def on_guild_channel_update(before, after):
+    if isinstance(after, discord.TextChannel) and before.overwrites != after.overwrites:
+        async for entry in after.guild.audit_logs(action=discord.AuditLogAction.overwrite_update):
+            if entry.target == after:
+                embed = discord.Embed(description=f"Les permissions du salon {after.mention} ont été modifiées.", color=discord.Color.from_rgb(193,168,233))
+                embed.set_footer(text=f"ID : {after.guild.id}")
+                embed.set_author(name=entry.user.display_name, icon_url=entry.user.avatar)
+                embed.add_field(name="Date de création", value=f"<t:{int(after.created_at.timestamp())}:F>", inline=False)
+        
+                config = load_config() 
+                log_channel_id = config.get('log_channel') 
+                if log_channel_id:
+                    log_channel = bot.get_channel(log_channel_id)
+                    if log_channel:
+                        await log_channel.send(embed=embed)
+                    else:
+                        print("Le salon de logging n'existe pas.")
+                else:
+                    print("Le salon de logging n'a pas été défini.")
+                break
+    if isinstance(before, discord.CategoryChannel) and before.overwrites != after.overwrites:
+        async for entry in after.guild.audit_logs(action=discord.AuditLogAction.overwrite_update):
+            if entry.target == after:
+                embed = discord.Embed(description=f"Les permissions de la catégorie {after.mention} ont été modifiées.", color=discord.Color.from_rgb(193,168,233))
+                embed.set_footer(text=f"ID : {after.guild.id}")
+                embed.set_author(name=entry.user.display_name, icon_url=entry.user.avatar)
+                embed.add_field(name="Date de création", value=f"<t:{int(after.created_at.timestamp())}:F>", inline=False)
+        
+                config = load_config() 
+                log_channel_id = config.get('log_channel') 
+                if log_channel_id:
+                    log_channel = bot.get_channel(log_channel_id)
+                    if log_channel:
+                        await log_channel.send(embed=embed)
+                    else:
+                        print("Le salon de logging n'existe pas.")
+                else:
+                    print("Le salon de logging n'a pas été défini.")
+                break
+    if before.name != after.name and isinstance(after, discord.TextChannel):
+        async for entry in after.guild.audit_logs(action=discord.AuditLogAction.channel_update):
+            if entry.target == after:
+                embed = discord.Embed(description=f"Le salon {after.mention} a été renommé", color=discord.Color.from_rgb(193,168,233))
+                embed.set_author(name=entry.user.display_name, icon_url=entry.user.avatar)
+                embed.set_footer(text=f"ID : {after.id}")
+                embed.add_field(name="Ancien nom", value=before.name, inline=False)
+                embed.add_field(name="Nouveau nom", value=after.name, inline=False)
+                embed.add_field(name="Date de création", value=f"<t:{int(after.created_at.timestamp())}:F>", inline=False)
+        
+                config = load_config() 
+                log_channel_id = config.get('log_channel') 
+                if log_channel_id:
+                    log_channel = bot.get_channel(log_channel_id)
+                    if log_channel:
+                        await log_channel.send(embed=embed)
+                    else:
+                        print("Le salon de logging n'existe pas.")
+                else:
+                    print("Le salon de logging n'a pas été défini.")
+                break
+    elif isinstance(after, discord.CategoryChannel) and before.name != after.name:
+        async for entry in after.guild.audit_logs(action=discord.AuditLogAction.channel_update):
+            if entry.target == after:
+                embed = discord.Embed(description=f"La catégorie {after.mention} a été renommée", color=discord.Color.from_rgb(193, 168, 233))
+                embed.set_author(name=entry.user.display_name, icon_url=entry.user.avatar)
+                embed.set_footer(text=f"ID : {after.id}")
+                embed.add_field(name="Ancien nom", value=before.name, inline=False)
+                embed.add_field(name="Nouveau nom", value=after.name, inline=False)
+                embed.add_field(name="Date de création", value=f"<t:{int(after.created_at.timestamp())}:F>", inline=False)
+
+                config = load_config()
+                log_channel_id = config.get('log_channel')
+                if log_channel_id:
+                    log_channel = bot.get_channel(log_channel_id)
+                    if log_channel:
+                        await log_channel.send(embed=embed)
+                    else:
+                        print("Le salon de logging n'existe pas.")
+                else:
+                    print("Le salon de logging n'a pas été défini.")
+                break
+@bot.event
+async def on_user_update(before, after):
+    config = load_config() 
+    log_channel_id = config.get('log_channel') 
+    if before.avatar != after.avatar:
+        embed = discord.Embed(description=f"{after.mention} `({after.name})` a mis à jour son profil", color=discord.Color.from_rgb(193, 168, 233))
+        embed.set_author(name=after.name, icon_url=after.avatar.url)
+        embed.set_thumbnail(url=after.avatar.url)
+        download_link = f"[Lien de l'image]({after.avatar.url})"
+        embed.add_field(name="", value=download_link)
+        embed.set_footer(text=f"ID : {after.id}")
+        embed.add_field(name="Date de création", value=f"<t:{int(after.created_at.timestamp())}:F>", inline=False)
+        
+        config = load_config() 
+        log_channel_id = config.get('log_channel') 
+        if log_channel_id:
+            log_channel = bot.get_channel(log_channel_id)
+            if log_channel:
+                await log_channel.send(embed=embed)
+            else:
+                print("Le salon de logging n'existe pas.")
+        else:
+            print("Le salon de logging n'a pas été défini.")
+
+@bot.event
+async def on_guild_update(before, after):
+    if before.icon != after.icon:
+        async for entry in after.audit_logs(action=discord.AuditLogAction.guild_update):
+            if entry.target == after:
+                embed = discord.Embed(description=f"Le serveur {after.name} a été mise à jour", color=discord.Color.from_rgb(193, 168, 233))
+                embed.set_author(name=entry.user.display_name, icon_url=entry.user.avatar)
+                embed.set_footer(text=f"ID : {after.id}")
+                embed.set_thumbnail(url=after.icon.url)
+                download_link = f"[Lien de l'image]({after.icon.url})"
+                embed.add_field(name="Nouvelle icône", value=download_link, inline=False)
+                embed.add_field(name="Date de création", value=f"<t:{int(after.created_at.timestamp())}:F>", inline=False)
+
+                config = load_config()
+                log_channel_id = config.get('log_channel')
+                if log_channel_id:
+                    log_channel = bot.get_channel(log_channel_id)
+                    if log_channel:
+                        await log_channel.send(embed=embed)
+                    else:
+                        print("Le salon de logging n'existe pas.")
+                else:
+                    print("Le salon de logging n'a pas été défini.")
+                break
+    
+    if before.name != after.name:
+        async for entry in after.audit_logs(limit=1, action=discord.AuditLogAction.guild_update):
+            author = entry.user
+            embed = discord.Embed(description=f"Le serveur {after.name} a été mise à jour", color=discord.Color.from_rgb(193, 168, 233))
+            embed.set_thumbnail(url=after.icon.url)
+            embed.set_author(name=author.display_name, icon_url=author.avatar)
+            embed.set_footer(text=f"ID : {before.id}")
+            embed.add_field(name="Ancien nom", value=before.name, inline=False)
+            embed.add_field(name="Nouveau nom", value=after.name, inline=False)
+            embed.add_field(name="Date de modification", value=f"<t:{int(time.time())}:F>", inline=False)
+
+            config = load_config()
+            log_channel_id = config.get('log_channel')
+            if log_channel_id:
+                log_channel = bot.get_channel(log_channel_id)
+                if log_channel:
+                    await log_channel.send(embed=embed)
+                else:
+                    print("Le salon de logging n'existe pas.")
+            else:
+                print("Le salon de logging n'a pas été défini.")
+            break
+
+@bot.event
+async def on_guild_channel_delete(channel):
+    if not isinstance(channel, discord.CategoryChannel):
+        async for entry in channel.guild.audit_logs(action=discord.AuditLogAction.channel_delete):
+            if entry.target.id == channel.id:
+                embed = discord.Embed(description=f"Le salon `{channel.name}` a été supprimé", color=discord.Color.red())
+                embed.set_author(name=entry.user.display_name, icon_url=entry.user.avatar)
+                embed.set_footer(text=f"ID : {channel.id}")
+                embed.add_field(name="Date de suppression", value=f"<t:{int(time.time())}:F>", inline=False)
+
+                config = load_config()
+                log_channel_id = config.get('log_channel')
+                if log_channel_id:
+                    log_channel = bot.get_channel(log_channel_id)
+                    if log_channel:
+                        await log_channel.send(embed=embed)
+                    else:
+                        print("Le salon de logging n'existe pas.")
+                else:
+                    print("Le salon de logging n'a pas été défini.")
+                break
+    else:
+        async for entry in channel.guild.audit_logs(action=discord.AuditLogAction.channel_delete):
+            if entry.target.id == channel.id:
+                embed = discord.Embed(description=f"La catégorie `{channel.name}` a été supprimée", color=discord.Color.red())
+                embed.set_author(name=entry.user.display_name, icon_url=entry.user.avatar)
+                embed.set_footer(text=f"ID : {channel.id}")
+                embed.add_field(name="Date de suppression", value=f"<t:{int(time.time())}:F>", inline=False)
+
+                config = load_config()
+                log_channel_id = config.get('log_channel')
+                if log_channel_id:
+                    log_channel = bot.get_channel(log_channel_id)
+                    if log_channel:
+                        await log_channel.send(embed=embed)
+                    else:
+                        print("Le salon de logging n'existe pas.")
+                else:
+                    print("Le salon de logging n'a pas été défini.")
+                break
+
+@bot.event
+async def on_guild_channel_create(channel):
+    if not isinstance(channel, discord.CategoryChannel):
+        async for entry in channel.guild.audit_logs(action=discord.AuditLogAction.channel_create):
+            if entry.target.id == channel.id:
+                category_name = "Aucune"
+                category_position = "Aucune"
+                if channel.category:
+                    category_name = channel.category.name
+                    category_position = channel.category.position
+                embed = discord.Embed(description=f"Le salon {channel.mention} a été créé", color=discord.Color.green())
+                embed.set_author(name=entry.user.display_name, icon_url=entry.user.avatar)
+                embed.set_footer(text=f"ID : {channel.id}")
+                embed.add_field(name="Catégorie", value=category_name, inline=False)
+                embed.add_field(name="Emplacement", value=category_position, inline=False)
+                embed.add_field(name="Date de création", value=f"<t:{int(time.time())}:F>", inline=False)
+
+                config = load_config()
+                log_channel_id = config.get('log_channel')
+                if log_channel_id:
+                    log_channel = bot.get_channel(log_channel_id)
+                    if log_channel:
+                        await log_channel.send(embed=embed)
+                    else:
+                        print("Le salon de logging n'existe pas.")
+                else:
+                    print("Le salon de logging n'a pas été défini.")
+                break
+    else:
+        async for entry in channel.guild.audit_logs(action=discord.AuditLogAction.channel_create):
+            if entry.target.id == channel.id:
+                embed = discord.Embed(description=f"La catégorie `{channel.name}` a été créée", color=discord.Color.green())
+                embed.set_author(name=entry.user.display_name, icon_url=entry.user.avatar)
+                embed.set_footer(text=f"ID : {channel.id}")
+                embed.add_field(name="Date de création", value=f"<t:{int(time.time())}:F>", inline=False)
+
+                config = load_config()
+                log_channel_id = config.get('log_channel')
+                if log_channel_id:
+                    log_channel = bot.get_channel(log_channel_id)
+                    if log_channel:
+                        await log_channel.send(embed=embed)
+                    else:
+                        print("Le salon de logging n'existe pas.")
+                else:
+                    print("Le salon de logging n'a pas été défini.")
+                break
+
+@bot.event
+async def on_member_join(member):
+    embed = discord.Embed(description=f"{member.mention} a rejoint le serveur", color=discord.Color.green())
+    embed.set_author(name=member.display_name, icon_url=member.avatar)
+    embed.set_footer(text=f"ID : {member.id}")
+    embed.add_field(name="Date de création du compte", value=f"<t:{int(member.created_at.timestamp())}:F>", inline=False)
+    embed.add_field(name="Date d'arrivée", value=f"<t:{int(time.time())}:F>", inline=False)
+    embed.add_field(name="Nombre de membres", value=len(member.guild.members), inline=False)
+
+    config = load_config()
+    log_channel_id = config.get('log_channel')
+    if log_channel_id:
+        log_channel = bot.get_channel(log_channel_id)
+        if log_channel:
+            await log_channel.send(embed=embed)
+        else:
+            print("Le salon de logging n'existe pas.")
+    else:
+        print("Le salon de logging n'a pas été défini.")
+
+@bot.event
+async def on_member_remove(member):
+    embed = discord.Embed(description=f"{member.mention} a quitté le serveur", color=discord.Color.red())
+    embed.set_author(name=member.display_name, icon_url=member.avatar)
+    embed.set_footer(text=f"ID : {member.id}")
+    embed.add_field(name="Date d'arrivée", value=f"<t:{int(member.joined_at.timestamp())}:F>", inline=False)
+    embed.add_field(name="Date de départ", value=f"<t:{int(time.time())}:F>", inline=False)
+
+    config = load_config()
+    log_channel_id = config.get('log_channel')
+    if log_channel_id:
+        log_channel = bot.get_channel(log_channel_id)
+        if log_channel:
+            await log_channel.send(embed=embed)
+        else:
+            print("Le salon de logging n'existe pas.")
+    else:
+        print("Le salon de logging n'a pas été défini.")
+
+@bot.event
+async def on_member_ban(guild, user):
+    async for entry in guild.audit_logs(action=discord.AuditLogAction.ban):
+        if entry.target.id == user.id:
+            embed = discord.Embed(description=f"{user.mention} a été banni du serveur", color=discord.Color.red())
+            embed.set_author(name=entry.user.display_name, icon_url=entry.user.avatar)
+            embed.set_footer(text=f"ID : {user.id}")
+            embed.add_field(name="Raison du bannissement", value=entry.reason if entry.reason else "Aucune raison spécifiée", inline=False)
+            embed.add_field(name="Date du bannissement", value=f"<t:{int(time.time())}:F>", inline=False)
+
+            config = load_config()
+            log_channel_id = config.get('log_channel')
+            if log_channel_id:
+                log_channel = bot.get_channel(log_channel_id)
+                if log_channel:
+                    await log_channel.send(embed=embed)
+                else:
+                    print("Le salon de logging n'existe pas.")
+            else:
+                print("Le salon de logging n'a pas été défini.")
+            break
+
+@bot.event
+async def on_member_unban(guild, user):
+    async for entry in guild.audit_logs(action=discord.AuditLogAction.unban):
+        if entry.target.id == user.id:
+            embed = discord.Embed(description=f"{user.mention} a été débanni du serveur", color=discord.Color.green())
+            embed.set_author(name=entry.user.display_name, icon_url=entry.user.avatar)
+            embed.set_footer(text=f"ID : {user.id}")
+            embed.add_field(name="Date du débannissement", value=f"<t:{int(time.time())}:F>", inline=False)
+
+            config = load_config()
+            log_channel_id = config.get('log_channel')
+            if log_channel_id:
+                log_channel = bot.get_channel(log_channel_id)
+                if log_channel:
+                    await log_channel.send(embed=embed)
+                else:
+                    print("Le salon de logging n'existe pas.")
+            else:
+                print("Le salon de logging n'a pas été défini.")
+            break
+@bot.event
+async def on_guild_role_create(role):
+    async for entry in role.guild.audit_logs(action=discord.AuditLogAction.role_create):
+        if entry.target.id == role.id:
+            embed = discord.Embed(description=f"Le rôle {role.mention} a été créé", color=discord.Color.green())
+            embed.set_footer(text=f"ID du rôle : {role.id}")
+            embed.set_author(name=entry.user.display_name, icon_url=entry.user.avatar)
+            embed.add_field(name="Date de création", value=f"<t:{int(time.time())}:F>", inline=False)
+
+            config = load_config() 
+            log_channel_id = config.get('log_channel') 
+            if log_channel_id:
+                log_channel = bot.get_channel(log_channel_id)
+                if log_channel:
+                    await log_channel.send(embed=embed)
+                else:
+                    print("Le salon de logging n'existe pas.")
+            else:
+                print("Le salon de logging n'a pas été défini.")
+            break
+
+@bot.event
+async def on_guild_role_delete(role):
+    async for entry in role.guild.audit_logs(action=discord.AuditLogAction.role_delete):
+        if entry.target.id == role.id:
+            embed = discord.Embed(description=f"Le rôle `{role.name}` a été supprimé", color=discord.Color.red())
+            embed.set_footer(text=f"ID du rôle : {role.id}")
+            embed.set_author(name=entry.user.display_name, icon_url=entry.user.avatar)
+            embed.add_field(name="Date de suppression", value=f"<t:{int(time.time())}:F>", inline=False)
+
+            config = load_config() 
+            log_channel_id = config.get('log_channel') 
+            if log_channel_id:
+                log_channel = bot.get_channel(log_channel_id)
+                if log_channel:
+                    await log_channel.send(embed=embed)
+                else:
+                    print("Le salon de logging n'existe pas.")
+            else:
+                print("Le salon de logging n'a pas été défini.")
+            break
+
+@bot.event
+async def on_guild_role_update(before, after):
+    changes = []
+    if before.name != after.name:
+        changes.append(f"Nom : {before.name} → {after.name}")
+    if before.color != after.color:
+        changes.append(f"Couleur : {before.color} → {after.color}")
+    if before.permissions != after.permissions:
+        changes.append("Permissions modifiées")
+
+    if changes:
+        async for entry in after.guild.audit_logs(action=discord.AuditLogAction.role_update):
+            if entry.target.id == after.id:
+                embed = discord.Embed(description=f"Le rôle {after.mention} a été modifié", color=discord.Color.from_rgb(193, 168, 233))
+                embed.set_footer(text=f"ID du rôle : {after.id}")
+                embed.set_author(name=entry.user.display_name, icon_url=entry.user.avatar)
+                embed.add_field(name="Changements", value="\n".join(changes), inline=False)
+                embed.add_field(name="Date de modification", value=f"<t:{int(time.time())}:F>", inline=False)
+
+                config = load_config() 
+                log_channel_id = config.get('log_channel') 
+                if log_channel_id:
+                    log_channel = bot.get_channel(log_channel_id)
+                    if log_channel:
+                        await log_channel.send(embed=embed)
+                    else:
+                        print("Le salon de logging n'existe pas.")
+                else:
+                    print("Le salon de logging n'a pas été défini.")
+                break
 
 @bot.tree.command(name="say", description="Envoie un message personnalisé sur un salon textuel.")
 @app_commands.describe(texte="Le message à envoyer", salon_textuel="Lien du salon textuel")
@@ -53,8 +548,7 @@ async def say(interaction: discord.Interaction, texte: str, salon_textuel: disco
     else:
             erreur = "Vous n'avez pas les permissions requises pour éxécuter cette commande."
             embed = discord.Embed(description=f"❌** Erreur｜**" + f"{erreur}" , color=discord.Color.red())
-            await interaction.response.send_message(embed=embed, ephemeral=True)        
-        
+            await interaction.response.send_message(embed=embed, ephemeral=True)               
 
 @bot.tree.command(name="avatar",description="Affiche l'avatar d'un utilisateur.")
 @app_commands.describe(utilisateur="L'utilisateur dont vous voulez connaitre l'avatar")
@@ -97,8 +591,6 @@ async def help(interaction: discord.Interaction):
     view.add_item(item=item)
     await interaction.response.send_message(embed=embed,view=view)
 
-
-    
 @bot.tree.command(name="loveletter",description="Dévoile l'amour que tu portes envers une personne de ce serveur.")
 @app_commands.describe(utilisateur="L'utilisateur dont vous voulez connaitre l'avatar", message="Le message que vous voulez envoyer à votre cutie lover", anonyme="Afichage (ou non) de votre pseudo")
 async def loveletter(interaction: discord.Interaction, utilisateur: discord.Member , message: str, anonyme: bool = False):
@@ -185,14 +677,13 @@ async def unlock(interaction: discord.Interaction, salon_textuel: discord.TextCh
              embed = discord.Embed(description=f"❌** Erreur｜**" + f"{erreur}" , color=discord.Color.red())
              await interaction.response.send_message(embed=embed, ephemeral=True)    
 
-
 @bot.tree.command(name="rename", description="Renomme un salon textuel.")
 @app_commands.describe(salon_textuel="Lien du salon textuel", nouveau_nom="Nouveau nom du salon textuel")
 async def rename(interaction: discord.Interaction, salon_textuel: discord.TextChannel, nouveau_nom: str):
     if interaction.user.guild_permissions.administrator:
         try:
             nom_actuel = salon_textuel.name
-            if '｜' in nom_actuel:  # Vérification s'il y a des caractères spéciaux
+            if '｜' in nom_actuel: 
                 nom_actuel = nom_actuel.split('｜', 1)[-1]
                 nouveau_nom_complet = f"{salon_textuel.name.split('｜', 1)[0]}｜{nouveau_nom}"
             else:
@@ -244,7 +735,6 @@ async def use_tag(interaction: discord.Interaction, tag_nom: str):
         embed = discord.Embed(description="❌ **Erreur｜** Ce tag n'existe pas.", color=discord.Color.red())
         await interaction.response.send_message(embed=embed, ephemeral=True)  
 
-
 @tag_group.command(name="new", description="Crée un nouveau tag.")
 @app_commands.describe(tag_nom="Nom du tag", texte="Texte intégré au tag", privé="Tag accessible par tous (ou non)")
 async def create_tag(interaction: discord.Interaction, tag_nom: str, texte: str, privé: bool = False):
@@ -269,7 +759,6 @@ async def remove_tag(interaction: discord.Interaction, tag_nom: str):
         embed = discord.Embed(description="❌ **Erreur｜** Ce tag n'existe pas.", color=discord.Color.red())
         await interaction.response.send_message(embed=embed)
         return
-
     if tags[tag_nom]["creator_id"] == user_id or interaction.user.guild_permissions.administrator:
         del tags[tag_nom]
         save_tags(tags)
@@ -286,14 +775,12 @@ async def tag_list(interaction: discord.Interaction):
         embed = discord.Embed(title="Liste des tags", description="Aucun tag n'a été créé 😔. Utilisez `/tag new` pour créer un nouveau tag.", color=discord.Color.from_rgb(193,168,233 ))
         await interaction.response.send_message(embed=embed)
         return
-    
     sorted_tags = sorted(tags.items()) 
     pages = []
     page_content = ""
     tags_per_page = 5
     current_page = 1
-    total_pages = (len(sorted_tags) - 1) // tags_per_page + 1
-    
+    total_pages = (len(sorted_tags) - 1) // tags_per_page + 1 
     for index, (tag_nom, data) in enumerate(sorted_tags, start=1):
         creator = interaction.guild.get_member(int(data["creator_id"]))
         if creator:
@@ -306,7 +793,7 @@ async def tag_list(interaction: discord.Interaction):
             lock_icon = f"`🔓 Publique ` "
         page_content += f"**{tag_nom}**  {lock_icon}\n`Auteur` : {creator_name}\n\n"
         if index % tags_per_page == 0 or index == len(sorted_tags):
-            pages.append(discord.Embed(title=f"Liste des tags ({current_page}/{total_pages})", description=page_content , color=discord.Color.from_rgb(193,168,233 )))
+            pages.append(discord.Embed(title=f"Liste des tags ({current_page}/{total_pages})", description=page_content , color=discord.Color.from_rgb(193,168,233 ), ))
             page_content = ""
             current_page += 1
     
@@ -316,7 +803,6 @@ async def tag_list(interaction: discord.Interaction):
 @bot.tree.command(name="customemoji", description="Affiche l'image d'un emoji personnalisé.")
 @app_commands.describe(emoji_nom="Nom de l'emoji personnalisé")
 async def custom_emoji(interaction: discord.Interaction, emoji_nom: str):
-
     emoji = discord.utils.get(interaction.guild.emojis, name=emoji_nom)
     if emoji is None:
         embed = discord.Embed(description=f"❌ **Erreur｜** L'emoji personnalisé `{emoji_nom}` n'a pas été trouvé.", color=discord.Color.red())
@@ -330,11 +816,9 @@ async def custom_emoji(interaction: discord.Interaction, emoji_nom: str):
     download_link = f"[Lien de l'image]({emoji_url})"
     embed.add_field(name="", value=download_link)
     await interaction.response.send_message(embed=embed)
+
 bot.tree.add_command(tag_group)
 
-with open('config.json', encoding="utf-8", errors="ignore") as f:
-    datatoken = json.load(f)
-    token = datatoken["token"]
 
 def change_profile_picture(token, image_path):
     try:
@@ -362,8 +846,46 @@ def change_profile_picture(token, image_path):
     except Exception as e:
         print(f"An error occurred: {e}")
 
+
+def load_config():
+    try:
+        with open('config.json', 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        print("Le fichier config.json n'a pas été trouvé.")
+        return {}
+    except Exception as e:
+        print(f"Une erreur s'est produite lors de la lecture du fichier config.json : {e}")
+        return {}
+
+def save_config(config):
+    with open('config.json', 'w') as f:
+        json.dump(config, f, indent=4)
+
+log_group = app_commands.Group(name="log", description="Commandes liés aux logs")
+bot.tree.add_command(log_group)
+
+
+@log_group.command(name="set", description="Définit un salon de logging.")
+@app_commands.describe(salon_textuel="Lien du salon choisi.")
+async def set_log_channel(interaction: discord.Interaction, salon_textuel: discord.TextChannel):
+
+    log_channel = salon_textuel.id
+    config = load_config()
+    config['log_channel'] = log_channel
+    save_config(config)
+    embed = discord.Embed(description=f"✅** Bravo!｜**" + f"Le salon textuel {salon_textuel.jump_url} a été défini comme salon de logging avec succès." , color=discord.Color.green())
+    await interaction.response.send_message(embed=embed)
+
+
+
+
+# Load the token from the config file
+config = load_config()
+token = config['token']
+
+
 image_path = "images\icon_uv-gifpp.gif"
 print("Profile picture found.")
 change_profile_picture(token, image_path)
 bot.run(token)
-
