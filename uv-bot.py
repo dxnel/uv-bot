@@ -17,11 +17,25 @@ intents.members = True
 intents.presences = True
 
 bot = commands.Bot(command_prefix='uv!', intents=intents)
+version = "1.0.0-rc [260324]"
 
 @bot.event
 async def on_ready():
     print(f'Logged in as {bot.user.name}')
     await bot.change_presence(status=discord.Status.online, activity=discord.Game('/help｜ultraviolet [uv]'))
+    embed = discord.Embed(description=f"[uv]bot est à présent en ligne et prêt à être utilisé", color=discord.Color.from_rgb(193,168,233))
+    embed.set_author(name=bot.user.display_name, icon_url=bot.user.avatar)
+    embed.add_field(name="Version", value=f"{version}", inline=False)
+    config = load_config() 
+    log_channel_id = config.get('log_channel') 
+    if log_channel_id:
+        log_channel = bot.get_channel(log_channel_id)
+        if log_channel:
+            await log_channel.send(embed=embed)
+        else:
+            print("Le salon de logging n'existe pas.")
+    else:
+        print("Le salon de logging n'a pas été défini.")
     try:
         synced = await bot.tree.sync()
         print(f"Synced {len(synced)} command(s)")
@@ -44,7 +58,7 @@ async def on_message_delete(message):
     embed.add_field(name="Contenu du message", value=message.content if message.content else "Contenu inconnu", inline=False)
     
     send_time = f"<t:{int(message.created_at.timestamp())}:F>"
-    embed.add_field(name="Heure d'envoi", value=send_time, inline=False)
+    embed.add_field(name="Date d'envoi", value=send_time, inline=False)
     
     config = load_config() 
     log_channel_id = config.get('log_channel') 
@@ -57,6 +71,7 @@ async def on_message_delete(message):
     else:
         print("Le salon de logging n'a pas été défini.")
 
+
 @bot.event
 async def on_message_edit(before, after):
     if before.content != after.content:
@@ -67,7 +82,7 @@ async def on_message_edit(before, after):
         embed.add_field(name="Nouveau contenu", value=after.content, inline=False)
         embed.add_field(name="Ancien contenu", value=before.content, inline=False)
         send_time = f"<t:{int(before.created_at.timestamp())}:F>"
-        embed.add_field(name="Heure d'envoi", value=send_time, inline=False)
+        embed.add_field(name="Date d'envoi", value=send_time, inline=False)
         
         config = load_config() 
         log_channel_id = config.get('log_channel') 
@@ -138,12 +153,48 @@ async def on_member_update(before, after):
                     print("Le salon de logging n'existe pas.")
             else:
                 print("Le salon de logging n'a pas été défini.")
+    if before.timed_out_until is None:
+        if after.timed_out_until is not None:
+            embed = discord.Embed(description=f"{after.mention} a été exclu", color=discord.Color.red())
+            embed.set_author(name=after.display_name, icon_url=after.avatar)
+            embed.set_footer(text=f"ID : {after.id}")
+            embed.add_field(name="Date d'expiration", value=f"<t:{int(after.timed_out_until.timestamp())}:F>", inline=False)
+            embed.add_field(name="Date d'arrivée", value=f"<t:{int(after.joined_at.timestamp())}:F>", inline=False)
 
+            config = load_config()
+            log_channel_id = config.get('log_channel')
+            if log_channel_id:
+                log_channel = bot.get_channel(log_channel_id)
+                if log_channel:
+                    await log_channel.send(embed=embed)
+                else:
+                    print("Le salon de logging n'existe pas.")
+            else:
+                print("Le salon de logging n'a pas été défini.")
+                
+    if before.timed_out_until is not None:
+        if after.timed_out_until is None:
+            embed = discord.Embed(description=f"{after.mention} n'est plus exclu", color=discord.Color.green())
+            embed.set_author(name=after.display_name, icon_url=after.avatar)
+            embed.set_footer(text=f"ID : {after.id}")
+            embed.add_field(name="Date d'arrivée", value=f"<t:{int(after.joined_at.timestamp())}:F>", inline=False)
+
+            config = load_config()
+            log_channel_id = config.get('log_channel')
+            if log_channel_id:
+                log_channel = bot.get_channel(log_channel_id)
+                if log_channel:
+                    await log_channel.send(embed=embed)
+                else:
+                    print("Le salon de logging n'existe pas.")
+            else:
+                print("Le salon de logging n'a pas été défini.")
+            
 
 @bot.event
 async def on_guild_channel_update(before, after):
     if isinstance(after, discord.TextChannel) and before.overwrites != after.overwrites:
-        async for entry in after.guild.audit_logs(action=discord.AuditLogAction.overwrite_update):
+        async for entry in after.guild.audit_logs(action=discord.AuditLogAction.overwrite_update): 
             if entry.target == after:
                 embed = discord.Embed(description=f"Les permissions du salon {after.mention} ont été modifiées.", color=discord.Color.from_rgb(193,168,233))
                 embed.set_footer(text=f"ID : {after.guild.id}")
@@ -485,6 +536,7 @@ async def on_member_unban(guild, user):
             else:
                 print("Le salon de logging n'a pas été défini.")
             break
+
 @bot.event
 async def on_guild_role_create(role):
     async for entry in role.guild.audit_logs(action=discord.AuditLogAction.role_create):
@@ -689,12 +741,14 @@ async def servericon(interaction: discord.Interaction):
 @bot.tree.command(name="help",description="Affiche des informations concernant [uv]bot.")
 async def help(interaction: discord.Interaction):
  
-    embed = discord.Embed(title="[uv]bot", description="[uv]bot est un bot discord crée exclusivement pour le serveur ultraviolet et présente de nombreuses fonctionnalitées essentielles. \n\n La liste des commandes et fonctionnalitées est affiché sur le projet Github.", color=discord.Color.from_rgb(193,168,233))
+    embed = discord.Embed(title="[uv]bot", description="[uv]bot est un bot discord crée exclusivement pour le serveur ultraviolet et présente de nombreuses fonctionnalitées essentielles.", color=discord.Color.from_rgb(193,168,233))
+    embed.add_field(name=f"Version", value=f"{version}", inline=True)
     view = discord.ui.View() 
     style = discord.ButtonStyle.grey 
     item = discord.ui.Button(style=style, label="Github", url="https://github.com/dxnuv/uv-bot")  
     view.add_item(item=item)
     await interaction.response.send_message(embed=embed,view=view)
+
 
 @bot.tree.command(name="loveletter",description="Dévoile l'amour que tu portes envers une personne de ce serveur.")
 @app_commands.describe(utilisateur="L'utilisateur dont vous voulez connaitre l'avatar", message="Le message que vous voulez envoyer à votre cutie lover", anonyme="Afichage (ou non) de votre pseudo")
