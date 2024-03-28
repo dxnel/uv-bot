@@ -15,6 +15,7 @@ intents.messages = True
 intents.message_content = True  
 intents.members = True
 intents.presences = True
+intents.guild_scheduled_events = True
 
 bot = commands.Bot(command_prefix='uv!', intents=intents)
 version = "1.0.0-rc [260324]"
@@ -624,7 +625,7 @@ async def on_voice_state_update(member, before, after):
 
         if action == "déplacé":
             embed = discord.Embed(description=f"{member.mention} a été déplacé dans un autre salon vocal.", color=discord.Color.from_rgb(193,168,233))
-            embed.set_footer(text=f"ID de l'utilisateur : {member.id}")
+            embed.set_footer(text=f"ID : {member.id}")
             embed.set_author(name=member.display_name, icon_url=member.avatar.url)
             embed.add_field(name="Salon vocal actuel", value=after.channel.jump_url if after.channel else "Aucun", inline=False)
             embed.add_field(name="Salon vocal précédent", value=before.channel.jump_url if before.channel else "Aucun", inline=False)
@@ -669,9 +670,9 @@ async def on_voice_state_update(member, before, after):
 
             embed = discord.Embed(description=f"Le statut vocal de {member.mention} a été mis à jour.", color=discord.Color.from_rgb(193,168,233))
             if mod:
-                embed.set_footer(text=f"{mod.display_name} | ID de l'utilisateur : {member.id}", icon_url=mod.avatar.url)
+                embed.set_footer(text=f"{mod.display_name} | ID : {member.id}", icon_url=mod.avatar.url)
             else:
-                embed.set_footer(text=f"ID de l'utilisateur : {member.id}")
+                embed.set_footer(text=f"ID : {member.id}")
             embed.set_author(name=member.display_name, icon_url=member.avatar.url)
             embed.add_field(name="Action", value=action, inline=True)
             embed.add_field(name="Muet", value="Oui" if after.mute else "Non", inline=True)
@@ -689,7 +690,107 @@ async def on_voice_state_update(member, before, after):
                     print("Le salon de logging n'existe pas.")
             else:
                 print("Le salon de logging n'a pas été défini.")
+
+
+@bot.event
+async def on_scheduled_event_create(event):
+    embed = discord.Embed(description=f"L'évenément `{event.name}` a été créé", color=discord.Color.green())
+    embed.add_field(name="Description", value=event.description, inline=False)
+    embed.add_field(name="Date de création", value=f"<t:{int(time.time())}:F>", inline=False)
+    embed.add_field(name="Début", value=f"<t:{int(event.start_time.timestamp())}:F>" , inline=True)
+    if event.end_time:
+        embed.add_field(name="Fin", value=f"<t:{int(event.end_time.timestamp())}:F>", inline=True)
+    if event.location:
+        embed.add_field(name="Lieu", value=event.location, inline=False)
+    if event.channel:
+        embed.add_field(name="Salon", value=event.channel.jump_url, inline=False)
+    if event.cover_image:
+        embed.set_image(url=event.cover_image.url)
     
+    creator = event.creator.display_name if event.creator else "Inconnu"
+    creator_icon_url = event.creator.avatar.url if creator != "Inconnu" else discord.Embed.Empty
+    embed.set_author(name=f"{creator}", icon_url=creator_icon_url)
+
+    config = load_config() 
+    log_channel_id = config.get('log_channel') 
+    if log_channel_id:
+        log_channel = bot.get_channel(log_channel_id)
+        if log_channel:
+            await log_channel.send(embed=embed)
+        else:
+            print("Le salon de logging n'existe pas.")
+    else:
+        print("Le salon de logging n'a pas été défini.")
+
+@bot.event
+async def on_scheduled_event_delete(event):
+    embed = discord.Embed(description=f"L'évenément `{event.name}` a été déprogrammé", color=discord.Color.red())
+    embed.add_field(name="Description", value=event.description, inline=False)
+    embed.add_field(name="Début", value=f"<t:{int(event.start_time.timestamp())}:F>" , inline=True)
+    embed.add_field(name="Date de suppression", value=f"<t:{int(time.time())}:F>", inline=False)
+    if event.end_time:
+        embed.add_field(name="Fin", value=f"<t:{int(event.end_time.timestamp())}:F>", inline=True)
+    if event.location:
+        embed.add_field(name="Lieu", value=event.location, inline=False)
+    if event.channel:
+        embed.add_field(name="Salon", value=event.channel.jump_url, inline=False)
+    if event.cover_image:
+        embed.set_image(url=event.cover_image.url)
+    
+    creator = event.creator.display_name if event.creator else "Inconnu"
+    creator_icon_url = event.creator.avatar.url if creator != "Inconnu" else discord.Embed.Empty
+    embed.set_author(name=f"{creator}", icon_url=creator_icon_url)
+
+    config = load_config() 
+    log_channel_id = config.get('log_channel') 
+    if log_channel_id:
+        log_channel = bot.get_channel(log_channel_id)
+        if log_channel:
+            await log_channel.send(embed=embed)
+        else:
+            print("Le salon de logging n'existe pas.")
+    else:
+        print("Le salon de logging n'a pas été défini.")
+
+@bot.event
+async def on_scheduled_event_update(before, after):
+    changes = []
+    if before.name != after.name:
+        changes.append(f"Nom : {before.name} → {after.name}")
+    if before.start_time != after.start_time:
+        changes.append(f"Début : <t:{int(before.start_time.timestamp())}:F> → <t:{int(after.start_time.timestamp())}:F>"     )
+    if before.end_time != after.end_time:
+        changes.append(f"Fin : <t:{int(before.end_time.timestamp())}:F> → <t:{int(after.end_time.timestamp())}:F>"     )
+    if before.description != after.description:
+        changes.append(f"Description : {before.description} → {after.description}")
+    if before.location != after.location:
+        changes.append(f"Lieu : {before.location} → {after.location}")
+    if before.cover_image != after.cover_image:
+        changes.append("Image modifiée")
+    if changes:
+        embed = discord.Embed(description=f"L' événement `{after.name}` a été mis à jour", color=discord.Color.from_rgb(193, 168, 233))
+        embed.set_footer(text=f"ID : {after.id}")
+        
+        updater_name = after.creator.display_name if after.creator else "Inconnu"
+        updater_avatar_url = after.creator.avatar.url if updater_name != "Inconnu" else discord.Embed.Empty
+        embed.set_author(name=f"{updater_name}", icon_url=updater_avatar_url)
+        if after.cover_image:
+            embed.set_image(url=after.cover_image.url)
+        embed.add_field(name="Changements", value="\n".join(changes), inline=False)
+        embed.add_field(name="Date de modification", value=f"<t:{int(time.time())}:F>", inline=False)
+
+        config = load_config() 
+        log_channel_id = config.get('log_channel') 
+        if log_channel_id:
+            log_channel = bot.get_channel(log_channel_id)
+            if log_channel:
+                await log_channel.send(embed=embed)
+            else:
+                print("Le salon de logging n'existe pas.")
+        else:
+            print("Le salon de logging n'a pas été défini.")
+
+
 @bot.tree.command(name="say", description="Envoie un message personnalisé sur un salon textuel.")
 @app_commands.describe(texte="Le message à envoyer", salon_textuel="Lien du salon textuel")
 async def say(interaction: discord.Interaction, texte: str, salon_textuel: discord.TextChannel = None):
