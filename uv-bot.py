@@ -620,7 +620,6 @@ async def on_voice_state_update(member, before, after):
             action = "quitté"
         else:
             action = "déplacé"
-
         if action == "déplacé":
             embed = discord.Embed(description=f"{member.mention} a été déplacé dans un autre salon vocal.", color=discord.Color.from_rgb(193,168,233))
             embed.set_footer(text=f"ID : {member.id}")
@@ -665,7 +664,6 @@ async def on_voice_state_update(member, before, after):
                         break
             else:
                 mod = None
-
             embed = discord.Embed(description=f"Le statut vocal de {member.mention} a été mis à jour.", color=discord.Color.from_rgb(193,168,233))
             if mod:
                 embed.set_footer(text=f"{mod.display_name} | ID : {member.id}", icon_url=mod.avatar.url)
@@ -846,37 +844,6 @@ async def help(interaction: discord.Interaction):
     view.add_item(item=item)
     await interaction.response.send_message(embed=embed,view=view)
 
-@bot.tree.command(name="penis",description="Rend heureux tes camardes et affiche ton chibre.")
-async def penis(interaction: discord.Interaction):
-    if interaction.channel.permissions_for(interaction.guild.me).send_messages:
-        ascii_art = (
-            "⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠟⠛⢉⢉⠉⠉⠻⣿⣿⣿⣿⣿\n"
-            "⣿⣿⣿⣿⣿⣿⣿⠟⠠⡰⣕⣗⣷⣧⣀⣅⠘⣿⣿⣿⣿⣿\n"
-            "⣿⣿⣿⣿⣿⣿⠃⣠⣳⣟⣿⣿⣷⣿⡿⣜⠄⣿⣿⣿⣿⣿\n"
-            "⣿⣿⣿⣿⣿⣿⠃⠄⣳⢷⣿⣿⣿⡿⣝⠖⠄⣿⣿⣿⣿⣿\n"
-            "⣿⣿⣿⣿⣿⠇⠄⢢⡹⣿⢷⣯⢿⢷⡫⣗⠍⢰⣿⣿⣿⣿\n"
-            "⣿⣿⣿⣿⡏⢀⢄⠤⣁⠋⠿⣗⣟⡯⡏⢎⠁⢸⣿⣿⣿⣿\n"
-            "⣿⣿⣿⣿⠄⢔⢕⣯⣿⣿⡲⡤⡄⡤⠄⡀⢠⣿⣿⣿⣿⣿\n"
-            "⣿⣿⣿⣿⠃⠄⢢⡹⣿⢷⣯⢿⢷⡫⣗⠍⢸⣿⣿⣿⣿⣿\n"
-            "⣿⣿⣿⡏⢀⢄⠤⣁⠋⠿⣗⣟⡯⡏⢎⠁⢸⣿⣿⣿⣿⣿\n"
-            "⣿⣿⣿⠄⢔⢕⣯⣿⣿⡲⡤⡄⡤⠄⡀⢠⣿⣿⣿⣿⣿⣿\n"
-            "⣿⣿⣿⠄⢨⣫⣿⣿⡿⣿⣻⢎⡗⡕⡅⢸⣿⣿⣿⣿⣿⣿\n"
-            "⣿⣿⣿⠄⢜⢾⣾⣿⣻⡮⡧⡳⡱⡁⢸⣿⣿⣿⣿⣿⣿⣿\n"
-            "⣿⣿⣿⠄⢸⢽⣿⣷⣿⣻⡮⡧⡳⡱⡁⢸⣿⣿⣿⣿⣿⣿\n"
-            "⣿⣿⣿⠄⢸⢽⣿⣷⣿⣻⡮⡧⡳⡱⡁⢸⣿⣿⣿⣿⣿⣿\n"
-            "⣿⣿⡟⠐⢕⡧⣻⣽⣾⡿⡪⡳⣝⣮⣟⣿⣻⣿⣿⣿⣿⣿\n"
-            "⣿⡏⠠⡸⣿⡧⣻⣽⢿⣻⡿⣽⡺⣻⡿⣮⢚⣹⣿⣿⣿⣿\n"
-            "⡿⠃⢀⠔⣕⣧⠻⣟⡯⡫⡿⣭⢾⣏⢻⣺⡮⣾⡿⢿⣿⣿\n"
-            "⠁⠄⠄⠄⠄⠑⡵⣻⡷⡞⡽⣻⡿⣿⣝⣮⣟⣿⣻⣻⣿⣿\n"
-            "⠀⠀⠀⠀⠀⠀⠀⠀⢘⡺⣽⡾⣿⢽⣯⡿⣮⢚⣻⣽⣾⣿⣿\n"
-        )
-        await interaction.response.send_message(ascii_art)
-    else:
-        erreur = "Vous n'avez pas les permissions requises pour éxécuter cette commande."
-        embed = discord.Embed(description=f"❌** Erreur｜**" + f"{erreur}" , color=discord.Color.red())
-        await interaction.response.send_message(embed=embed, ephemeral=True)
-
-
 @bot.tree.command(name="loveletter",description="Dévoile l'amour que tu portes envers une personne de ce serveur.")
 @app_commands.describe(utilisateur="L'utilisateur dont vous voulez connaitre l'avatar", message="Le message que vous voulez envoyer à votre cutie lover", anonyme="Afichage (ou non) de votre pseudo")
 async def loveletter(interaction: discord.Interaction, utilisateur: discord.Member , message: str, anonyme: bool = False):
@@ -902,7 +869,7 @@ async def archive(interaction: discord.Interaction, salon_textuel: discord.TextC
     if interaction.user.guild_permissions.administrator:
          date_formattee = datetime.now().strftime("%d-%m-%y")
          nom_salon_archives = f"{salon_textuel.name}-{date_formattee}"  
-         categorie_archives = discord.utils.get(interaction.guild.categories, name="📦 archives")
+         categorie_archives = discord.utils.get(interaction.guild.categories, name="📦 ARCHIVES")
 
          if categorie_archives is None:
              erreur = "La catégorie '📦 archives' n'a pas été trouvée."
@@ -936,7 +903,6 @@ async def lock(interaction: discord.Interaction, salon_textuel: discord.TextChan
                embed = discord.Embed(description=f"✅** Bravo!｜**" + f"Le salon textuel {salon_textuel.jump_url} a été désactivé avec succès." , color=discord.Color.green())
                await interaction.response.send_message(embed=embed)
 
-
      else:
              erreur = "Vous n'avez pas les permissions requises pour éxécuter cette commande."
              embed = discord.Embed(description=f"❌** Erreur｜**" + f"{erreur}" , color=discord.Color.red())
@@ -954,7 +920,6 @@ async def unlock(interaction: discord.Interaction, salon_textuel: discord.TextCh
                await salon_textuel.set_permissions(interaction.guild.default_role, send_messages=True)
                embed = discord.Embed(description=f"✅** Bravo!｜**" + f"Le salon textuel {salon_textuel.jump_url} a été réactivé avec succès." , color=discord.Color.green())
                await interaction.response.send_message(embed=embed)
-
 
      else:
              erreur = "Vous n'avez pas les permissions requises pour éxécuter cette commande."
@@ -1122,7 +1087,6 @@ def change_profile_picture(token, image_path):
         print('Profile picture has been changed succesfully.')
     except Exception as e:
         print(f"An error occurred: {e}")
-
 
 def load_config():
     try:
