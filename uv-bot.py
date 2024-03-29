@@ -936,13 +936,8 @@ async def rename(interaction: discord.Interaction, salon_textuel: discord.TextCh
     if interaction.user.guild_permissions.administrator:
         try:
             nom_actuel = salon_textuel.name
-            if '｜' in nom_actuel: 
-                nom_actuel = nom_actuel.split('｜', 1)[-1]
-                nouveau_nom_complet = f"{salon_textuel.name.split('｜', 1)[0]}｜{nouveau_nom}"
-            else:
-                nouveau_nom_complet = nouveau_nom
-            await salon_textuel.edit(name=nouveau_nom_complet)
-            embed = discord.Embed(description=f"✅** Bravo!｜** Le salon textuel `{nom_actuel}` a été renommé en `{nouveau_nom_complet}` avec succès.", color=discord.Color.green())
+            await salon_textuel.edit(name=nouveau_nom)
+            embed = discord.Embed(description=f"✅** Bravo!｜** Le salon textuel `{nom_actuel}` a été renommé en `{nouveau_nom}` avec succès.", color=discord.Color.green())
             await interaction.response.send_message(embed=embed)
         except Exception as e:
             erreur = f"Une erreur s'est produite lors du renommage du salon textuel : {e}"
