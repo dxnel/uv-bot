@@ -846,6 +846,37 @@ async def help(interaction: discord.Interaction):
     view.add_item(item=item)
     await interaction.response.send_message(embed=embed,view=view)
 
+@bot.tree.command(name="penis",description="Rend heureux tes camardes et affiche ton chibre.")
+async def penis(interaction: discord.Interaction):
+    if interaction.channel.permissions_for(interaction.guild.me).send_messages:
+        ascii_art = (
+            "⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠟⠛⢉⢉⠉⠉⠻⣿⣿⣿⣿⣿\n"
+            "⣿⣿⣿⣿⣿⣿⣿⠟⠠⡰⣕⣗⣷⣧⣀⣅⠘⣿⣿⣿⣿⣿\n"
+            "⣿⣿⣿⣿⣿⣿⠃⣠⣳⣟⣿⣿⣷⣿⡿⣜⠄⣿⣿⣿⣿⣿\n"
+            "⣿⣿⣿⣿⣿⣿⠃⠄⣳⢷⣿⣿⣿⡿⣝⠖⠄⣿⣿⣿⣿⣿\n"
+            "⣿⣿⣿⣿⣿⠇⠄⢢⡹⣿⢷⣯⢿⢷⡫⣗⠍⢰⣿⣿⣿⣿\n"
+            "⣿⣿⣿⣿⡏⢀⢄⠤⣁⠋⠿⣗⣟⡯⡏⢎⠁⢸⣿⣿⣿⣿\n"
+            "⣿⣿⣿⣿⠄⢔⢕⣯⣿⣿⡲⡤⡄⡤⠄⡀⢠⣿⣿⣿⣿⣿\n"
+            "⣿⣿⣿⣿⠃⠄⢢⡹⣿⢷⣯⢿⢷⡫⣗⠍⢸⣿⣿⣿⣿⣿\n"
+            "⣿⣿⣿⡏⢀⢄⠤⣁⠋⠿⣗⣟⡯⡏⢎⠁⢸⣿⣿⣿⣿⣿\n"
+            "⣿⣿⣿⠄⢔⢕⣯⣿⣿⡲⡤⡄⡤⠄⡀⢠⣿⣿⣿⣿⣿⣿\n"
+            "⣿⣿⣿⠄⢨⣫⣿⣿⡿⣿⣻⢎⡗⡕⡅⢸⣿⣿⣿⣿⣿⣿\n"
+            "⣿⣿⣿⠄⢜⢾⣾⣿⣻⡮⡧⡳⡱⡁⢸⣿⣿⣿⣿⣿⣿⣿\n"
+            "⣿⣿⣿⠄⢸⢽⣿⣷⣿⣻⡮⡧⡳⡱⡁⢸⣿⣿⣿⣿⣿⣿\n"
+            "⣿⣿⣿⠄⢸⢽⣿⣷⣿⣻⡮⡧⡳⡱⡁⢸⣿⣿⣿⣿⣿⣿\n"
+            "⣿⣿⡟⠐⢕⡧⣻⣽⣾⡿⡪⡳⣝⣮⣟⣿⣻⣿⣿⣿⣿⣿\n"
+            "⣿⡏⠠⡸⣿⡧⣻⣽⢿⣻⡿⣽⡺⣻⡿⣮⢚⣹⣿⣿⣿⣿\n"
+            "⡿⠃⢀⠔⣕⣧⠻⣟⡯⡫⡿⣭⢾⣏⢻⣺⡮⣾⡿⢿⣿⣿\n"
+            "⠁⠄⠄⠄⠄⠑⡵⣻⡷⡞⡽⣻⡿⣿⣝⣮⣟⣿⣻⣻⣿⣿\n"
+            "⠀⠀⠀⠀⠀⠀⠀⠀⢘⡺⣽⡾⣿⢽⣯⡿⣮⢚⣻⣽⣾⣿⣿\n"
+        )
+        await interaction.response.send_message(ascii_art)
+    else:
+        erreur = "Vous n'avez pas les permissions requises pour éxécuter cette commande."
+        embed = discord.Embed(description=f"❌** Erreur｜**" + f"{erreur}" , color=discord.Color.red())
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+
+
 @bot.tree.command(name="loveletter",description="Dévoile l'amour que tu portes envers une personne de ce serveur.")
 @app_commands.describe(utilisateur="L'utilisateur dont vous voulez connaitre l'avatar", message="Le message que vous voulez envoyer à votre cutie lover", anonyme="Afichage (ou non) de votre pseudo")
 async def loveletter(interaction: discord.Interaction, utilisateur: discord.Member , message: str, anonyme: bool = False):
