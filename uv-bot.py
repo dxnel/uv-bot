@@ -18,7 +18,7 @@ intents.presences = True
 intents.guild_scheduled_events = True
 
 bot = commands.Bot(command_prefix='uv!', intents=intents)
-version = "1.0.0-rc [260324]"
+version = "1.0.0-rc2 [290324]"
 
 @bot.event
 async def on_ready():
@@ -71,7 +71,6 @@ async def on_message_delete(message):
             print("Le salon de logging n'existe pas.")
     else:
         print("Le salon de logging n'a pas été défini.")
-
 
 @bot.event
 async def on_message_edit(before, after):
@@ -191,7 +190,6 @@ async def on_member_update(before, after):
             else:
                 print("Le salon de logging n'a pas été défini.")
             
-
 @bot.event
 async def on_guild_channel_update(before, after):
     if isinstance(after, discord.TextChannel) and before.overwrites != after.overwrites:
@@ -691,12 +689,10 @@ async def on_voice_state_update(member, before, after):
             else:
                 print("Le salon de logging n'a pas été défini.")
 
-
 @bot.event
 async def on_scheduled_event_create(event):
     embed = discord.Embed(description=f"L'évenément `{event.name}` a été créé", color=discord.Color.green())
     embed.add_field(name="Description", value=event.description, inline=False)
-    embed.add_field(name="Date de création", value=f"<t:{int(time.time())}:F>", inline=False)
     embed.add_field(name="Début", value=f"<t:{int(event.start_time.timestamp())}:F>" , inline=True)
     if event.end_time:
         embed.add_field(name="Fin", value=f"<t:{int(event.end_time.timestamp())}:F>", inline=True)
@@ -704,6 +700,7 @@ async def on_scheduled_event_create(event):
         embed.add_field(name="Lieu", value=event.location, inline=False)
     if event.channel:
         embed.add_field(name="Salon", value=event.channel.jump_url, inline=False)
+    embed.add_field(name="Date de création", value=f"<t:{int(time.time())}:F>", inline=False)
     if event.cover_image:
         embed.set_image(url=event.cover_image.url)
     
@@ -727,13 +724,13 @@ async def on_scheduled_event_delete(event):
     embed = discord.Embed(description=f"L'évenément `{event.name}` a été déprogrammé", color=discord.Color.red())
     embed.add_field(name="Description", value=event.description, inline=False)
     embed.add_field(name="Début", value=f"<t:{int(event.start_time.timestamp())}:F>" , inline=True)
-    embed.add_field(name="Date de suppression", value=f"<t:{int(time.time())}:F>", inline=False)
     if event.end_time:
         embed.add_field(name="Fin", value=f"<t:{int(event.end_time.timestamp())}:F>", inline=True)
     if event.location:
         embed.add_field(name="Lieu", value=event.location, inline=False)
     if event.channel:
         embed.add_field(name="Salon", value=event.channel.jump_url, inline=False)
+    embed.add_field(name="Date de suppression", value=f"<t:{int(time.time())}:F>", inline=False)
     if event.cover_image:
         embed.set_image(url=event.cover_image.url)
     
@@ -789,7 +786,6 @@ async def on_scheduled_event_update(before, after):
                 print("Le salon de logging n'existe pas.")
         else:
             print("Le salon de logging n'a pas été défini.")
-
 
 @bot.tree.command(name="say", description="Envoie un message personnalisé sur un salon textuel.")
 @app_commands.describe(texte="Le message à envoyer", salon_textuel="Lien du salon textuel")
@@ -850,7 +846,6 @@ async def help(interaction: discord.Interaction):
     view.add_item(item=item)
     await interaction.response.send_message(embed=embed,view=view)
 
-
 @bot.tree.command(name="loveletter",description="Dévoile l'amour que tu portes envers une personne de ce serveur.")
 @app_commands.describe(utilisateur="L'utilisateur dont vous voulez connaitre l'avatar", message="Le message que vous voulez envoyer à votre cutie lover", anonyme="Afichage (ou non) de votre pseudo")
 async def loveletter(interaction: discord.Interaction, utilisateur: discord.Member , message: str, anonyme: bool = False):
@@ -896,9 +891,7 @@ async def archive(interaction: discord.Interaction, salon_textuel: discord.TextC
             erreur = "Vous n'avez pas les permissions requises pour éxécuter cette commande."
             embed = discord.Embed(description=f"❌** Erreur｜**" + f"{erreur}" , color=discord.Color.red())
             await interaction.response.send_message(embed=embed, ephemeral=True)
-
-    
-    
+   
 @bot.tree.command(name="lock",description="Désactive un salon textuel.")
 @app_commands.describe(salon_textuel="Le salon que vous souhaitez désactiver")
 async def lock(interaction: discord.Interaction, salon_textuel: discord.TextChannel = None):
@@ -1079,10 +1072,8 @@ async def custom_emoji(interaction: discord.Interaction, emoji_nom: str):
 
 bot.tree.add_command(tag_group)
 
-
 def change_profile_picture(token, image_path):
     try:
-        # Remove quotes and leading/trailing whitespaces from the image path
         image_path = image_path.replace('"',"")
         image_path = image_path.replace("'","")
         image_path = image_path.strip()
@@ -1125,7 +1116,6 @@ def save_config(config):
 log_group = app_commands.Group(name="log", description="Commandes liés aux logs")
 bot.tree.add_command(log_group)
 
-
 @log_group.command(name="set", description="Définit un salon de logging.")
 @app_commands.describe(salon_textuel="Lien du salon choisi.")
 async def set_log_channel(interaction: discord.Interaction, salon_textuel: discord.TextChannel):
@@ -1137,13 +1127,8 @@ async def set_log_channel(interaction: discord.Interaction, salon_textuel: disco
     embed = discord.Embed(description=f"✅** Bravo!｜**" + f"Le salon textuel {salon_textuel.jump_url} a été défini comme salon de logging avec succès." , color=discord.Color.green())
     await interaction.response.send_message(embed=embed)
 
-
-
-
-# Load the token from the config file
 config = load_config()
 token = config['token']
-
 
 image_path = "images\icon_uv-gifpp.gif"
 print("Profile picture found.")
