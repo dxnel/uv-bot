@@ -842,7 +842,7 @@ async def help(interaction: discord.Interaction):
     view.add_item(item=item)
     await interaction.response.send_message(embed=embed,view=view)
 
-@bot.tree.command(name="loveletter",description="Dévoile l'amour que tu portes envers une personne de ce serveur.")
+@bot.tree.command(name="loveletter",description="Envoie une lettre d'amour à l'utilisateur de votre choix")
 @app_commands.describe(utilisateur="L'utilisateur dont vous voulez connaitre l'avatar", message="Le message que vous voulez envoyer à votre cutie lover", anonyme="Afichage (ou non) de votre pseudo")
 async def loveletter(interaction: discord.Interaction, utilisateur: discord.Member , message: str, anonyme: bool = False):
     guild_id = interaction.guild_id
@@ -1134,7 +1134,7 @@ def save_reminders(reminders):
         json.dump(reminders, file, indent=4)
 
 
-@reminder_group.command(name="new", description="Créer un nouveau rappel.")
+@reminder_group.command(name="new", description="Crée un nouveau rappel.")
 @app_commands.describe(rappel_nom="Nom du rappel.", rappel_date="Date à laquelle le rappel est envoyé. (Format: JJ/MM/AAAA HH:MM)")
 async def new_reminder(interaction: discord.Interaction, rappel_nom: str, rappel_date: str):
     nom = rappel_nom
