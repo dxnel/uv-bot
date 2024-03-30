@@ -18,21 +18,18 @@ intents.presences = True
 intents.guild_scheduled_events = True
 
 bot = commands.Bot(command_prefix='uv!', intents=intents)
-version = "1.0.0-rc2 [290324]"
+version = "1.0.0-rc2 [300324]"
 
 @bot.event
 async def on_ready():
     print(f'Logged in as {bot.user.name}')
     await bot.change_presence(status=discord.Status.online, activity=discord.Game('/help｜ultraviolet [uv]'))
-    embed = discord.Embed(description=f"[uv]bot est à présent en ligne et prêt à être utilisé", color=discord.Color.from_rgb(193,168,233))
-    embed.set_author(name=bot.user.display_name, icon_url=bot.user.avatar)
-    embed.add_field(name="Version", value=f"{version}", inline=False)
     config = load_config() 
     log_channel_id = config.get('log_channel') 
     if log_channel_id:
         log_channel = bot.get_channel(log_channel_id)
         if log_channel:
-            await log_channel.send(embed=embed)
+            print("Le salon de logging existe.")
         else:
             print("Le salon de logging n'existe pas.")
     else:
@@ -42,6 +39,7 @@ async def on_ready():
         print(f"Synced {len(synced)} command(s)")
     except Exception as e:
         print(e)
+    await check_reminders(bot)
         
 @bot.event
 async def on_message(message):
@@ -938,11 +936,11 @@ async def rename(interaction: discord.Interaction, salon_textuel: discord.TextCh
         except Exception as e:
             erreur = f"Une erreur s'est produite lors du renommage du salon textuel : {e}"
             embed = discord.Embed(description=f"❌** Erreur｜** {erreur}", color=discord.Color.red())
-            await interaction.response.send_message(embed=embed)
+            await interaction.response.send_message(embed=embed, ephemeral=True)
     else:
         erreur = "Vous n'avez pas les permissions requises pour exécuter cette commande."
         embed = discord.Embed(description=f"❌** Erreur｜** {erreur}", color=discord.Color.red())
-        await interaction.response.send_message(embed=embed)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 
 def load_tags():
     try:
@@ -986,7 +984,7 @@ async def create_tag(interaction: discord.Interaction, tag_nom: str, texte: str,
     user_id = str(interaction.user.id)
     if tag_nom in tags:
         embed = discord.Embed(description=f"❌ **Erreur｜** Le tag `{tag_nom}` existe déjà.", color=discord.Color.red())
-        await interaction.response.send_message(embed=embed)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
         return
     tags[tag_nom] = {"texte": texte, "creator_id": user_id, "private": privé}
     save_tags(tags)
@@ -1001,7 +999,7 @@ async def remove_tag(interaction: discord.Interaction, tag_nom: str):
     
     if tag_nom not in tags:
         embed = discord.Embed(description="❌ **Erreur｜** Ce tag n'existe pas.", color=discord.Color.red())
-        await interaction.response.send_message(embed=embed)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
         return
     if tags[tag_nom]["creator_id"] == user_id or interaction.user.guild_permissions.administrator:
         del tags[tag_nom]
@@ -1010,7 +1008,7 @@ async def remove_tag(interaction: discord.Interaction, tag_nom: str):
         await interaction.response.send_message(embed=embed)
     else:
         embed = discord.Embed(description="❌ **Erreur｜** Vous n'êtes pas l'auteur de ce tag ou vous n'avez pas les permissions requises.", color=discord.Color.red())
-        await interaction.response.send_message(embed=embed)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 
 @tag_group.command(name="list", description="Affiche l'ensemble des tags.")
 async def tag_list(interaction: discord.Interaction):
@@ -1050,7 +1048,7 @@ async def custom_emoji(interaction: discord.Interaction, emoji_nom: str):
     emoji = discord.utils.get(interaction.guild.emojis, name=emoji_nom)
     if emoji is None:
         embed = discord.Embed(description=f"❌ **Erreur｜** L'emoji personnalisé `{emoji_nom}` n'a pas été trouvé.", color=discord.Color.red())
-        await interaction.response.send_message(embed=embed)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
         return
 
     emoji_url = emoji.url
@@ -1116,6 +1114,117 @@ async def set_log_channel(interaction: discord.Interaction, salon_textuel: disco
     save_config(config)
     embed = discord.Embed(description=f"✅** Bravo!｜**" + f"Le salon textuel {salon_textuel.jump_url} a été défini comme salon de logging avec succès." , color=discord.Color.green())
     await interaction.response.send_message(embed=embed)
+
+reminder_group = app_commands.Group(name="reminder", description="Commandes liés aux rappels")
+bot.tree.add_command(reminder_group)
+
+def load_reminders():
+    try:
+        with open('reminders.json', 'r') as file:
+            return json.load(file)
+    except FileNotFoundError:
+        print("Le fichier reminders.json n'a pas été trouvé.")
+        return {}
+    except Exception as e:
+        print(f"Une erreur s'est produite lors de la lecture du fichier reminders.json : {e}")
+        return {}
+
+def save_reminders(reminders):
+    with open('reminders.json', 'w') as file:
+        json.dump(reminders, file, indent=4)
+
+
+@reminder_group.command(name="new", description="Créer un nouveau rappel.")
+@app_commands.describe(rappel_nom="Nom du rappel.", rappel_date="Date à laquelle le rappel est envoyé. (Format: JJ/MM/AAAA HH:MM)")
+async def new_reminder(interaction: discord.Interaction, rappel_nom: str, rappel_date: str):
+    nom = rappel_nom
+    date = rappel_date
+    reminders = load_reminders()
+    
+    try:
+        date_obj = datetime.strptime(date, "%d/%m/%Y %H:%M")
+    except ValueError:
+        embed = discord.Embed(description="❌ **Erreur｜** Format de date invalide. Utilisez le format JJ/MM/AAAA HH:MM.", color=discord.Color.red())
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+        return
+    
+    reminders[nom] = {
+        "utilisateur": str(interaction.user.id),
+        "date": date_obj.strftime("%d/%m/%Y %H:%M"),
+    }
+    
+    save_reminders(reminders)
+    
+    embed = discord.Embed(description=f"✅ **Bravo!｜** Le rappel `{nom}` a été créé avec succès ! Le rappel vous sera envoyé par message privé à l'heure programmée.", color=discord.Color.green())
+    await interaction.response.send_message(embed=embed)
+
+@reminder_group.command(name="remove", description="Supprime un rappel existant.")
+@app_commands.describe(rappel_nom="Nom du rappel à supprimer.")
+async def delete_reminder(interaction: discord.Interaction, rappel_nom: str):
+    reminders = load_reminders()
+    user_id = str(interaction.user.id)
+    
+    if rappel_nom not in reminders:
+        embed = discord.Embed(description="❌ **Erreur｜** Ce rappel n'existe pas.", color=discord.Color.red())
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+        return
+    
+    rappel = reminders[rappel_nom]
+    
+    if rappel["utilisateur"] != user_id:
+        embed = discord.Embed(description="❌ **Erreur｜** Vous n'êtes pas autorisé à supprimer ce rappel.", color=discord.Color.red())
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+        return
+    
+    del reminders[rappel_nom]
+    save_reminders(reminders)
+    
+    embed = discord.Embed(description=f"✅ **Bravo!｜** Le rappel `{rappel_nom}` a été supprimé avec succès !", color=discord.Color.green())
+    await interaction.response.send_message(embed=embed)
+
+@reminder_group.command(name="list", description="Affiche la liste de vos rappels.")
+async def list_reminder(interaction: discord.Interaction):
+    reminders = load_reminders()
+    user_id = str(interaction.user.id)
+    
+    user_reminders = [(nom, rappel) for nom, rappel in reminders.items() if rappel["utilisateur"] == user_id]
+    
+    if not user_reminders:
+        embed = discord.Embed(title=f"Rappels｜{interaction.user.display_name}", description=f"Aucun rappel n'a été créé 😔. Utilisez `/reminder new` pour créer un nouveau rappel.", color=discord.Color.from_rgb(193, 168, 233))
+        await interaction.response.send_message(embed=embed)
+        return
+    
+    embed = discord.Embed(title=f"Rappels｜{interaction.user.display_name}", description=f"Liste des rappels de l'utilisateur.", color=discord.Color.from_rgb(193, 168, 233))
+    
+    for nom, rappel in user_reminders:
+        rappel_date = datetime.strptime(rappel["date"], "%d/%m/%Y %H:%M")
+        timestamp = int(rappel_date.timestamp())
+        
+        embed.add_field(
+            name=nom,
+            value=f"`Date :` <t:{int(timestamp)}:F>",
+            inline=False
+        )
+    
+    await interaction.response.send_message(embed=embed)
+
+async def check_reminders(bot):
+    while True:
+        reminders = load_reminders()
+        current_time = datetime.now()
+        
+        for nom, rappel in list(reminders.items()):
+            rappel_time = datetime.strptime(rappel["date"], "%d/%m/%Y %H:%M")
+            
+            if current_time >= rappel_time:
+                utilisateur = await bot.fetch_user(int(rappel["utilisateur"]))
+                embed = discord.Embed(title=f"Rappel｜{utilisateur}", description=f"\n⏰ Drrriiingg!!! Drrriiingg!! C'est l'heure {utilisateur.mention}! \n\nVotre rappel `{nom}` vient de s'enclencher." , color=discord.Color.from_rgb(193, 168, 233))
+                
+                await utilisateur.send(embed=embed)
+                del reminders[nom]
+                save_reminders(reminders)
+        
+        await asyncio.sleep(30)  
 
 config = load_config()
 token = config['token']
