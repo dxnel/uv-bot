@@ -7,14 +7,18 @@
 
 ## ⚙️ Fonctionnalités
 Liste des fonctionnalistés du bot.
-#### Commandes slash
+#### 🛠️ Commandes slash
 - **/archive** : archive un salon textuel.
 - **/avatar** : affiche l'avatar d'un utilisateur.
 - **/customemoji** : affiche l'image d'un emoji personnalisé.
 - **/help** : affiche des informations concernant [uv]bot.
 - **/lock** : désactive un salon textuel.
-- **/loveletter** : dévoile l'amour que tu portes envers une personne de ce serveur.
+- **/log set** : définit un salon de logging. *(ACTIVE LE LOGGING)*
+- **/loveletter** : envoie une lettre d'amour à l'utilisateur de votre choix.
 - **/profileavatar** : affiche l'avatar de profil d'un utilisateur.
+- **/reminder list** : affiche la liste de vos rappels.
+- **/reminder new** : crée un nouveau rappel.
+- **/reminder remove** : supprime un rappel existant.
 - **/rename** : renomme un salon textuel.
 - **/say** : envoie un message personnalisé sur un salon textuel.
 - **/servericon** : affiche l'icône du serveur actuel.
@@ -22,7 +26,10 @@ Liste des fonctionnalistés du bot.
 - **/tag new** : crée un nouveau tag.
 - **/tag remove** : supprime un tag créé par vous.
 - **/unlock** : réactive un salon textuel.
-#### Autres fonctionnalités
+
+#### 📄 Logging
+Après initilisation du logging avec la commande **/log set**, la plupart des événements seront loggés sur le salon définit.
+#### ℹ️ Autres fonctionnalités
 - **y/n** : poser une question yes/no avec les réactions du bot (⬆️/⬇️).
 ## 📝Licence
   MIT © ultraviolet (2024)
