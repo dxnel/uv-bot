@@ -14,7 +14,7 @@ Liste des fonctionnalistés du bot.
 - **/help** : affiche des informations concernant [uv]bot.
 - **/lock** : désactive un salon textuel.
 - **/log set** : définit un salon de logging. *(ACTIVE LE LOGGING)*
-- **/loveletter** : dévoile l'amour que tu portes envers une personne de ce serveur.
+- **/loveletter** : envoie une lettre d'amour à l'utilisateur de votre choix.
 - **/profileavatar** : affiche l'avatar de profil d'un utilisateur.
 - **/reminder list** : affiche la liste de vos rappels.
 - **/reminder new** : crée un nouveau rappel.
