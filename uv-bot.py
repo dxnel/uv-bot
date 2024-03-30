@@ -842,7 +842,7 @@ async def help(interaction: discord.Interaction):
     view.add_item(item=item)
     await interaction.response.send_message(embed=embed,view=view)
 
-@bot.tree.command(name="loveletter",description="Envoie une lettre d'amour à l'utilisateur de votre choix")
+@bot.tree.command(name="loveletter",description="Envoie une lettre d'amour à l'utilisateur de votre choix.")
 @app_commands.describe(utilisateur="L'utilisateur dont vous voulez connaitre l'avatar", message="Le message que vous voulez envoyer à votre cutie lover", anonyme="Afichage (ou non) de votre pseudo")
 async def loveletter(interaction: discord.Interaction, utilisateur: discord.Member , message: str, anonyme: bool = False):
     guild_id = interaction.guild_id
