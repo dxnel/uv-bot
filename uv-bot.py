@@ -18,7 +18,7 @@ intents.presences = True
 intents.guild_scheduled_events = True
 
 bot = commands.Bot(command_prefix='uv!', intents=intents)
-version = "1.0.0-rc2 [300324]"
+version = "1.0.0-rc3 [310324]"
 
 @bot.event
 async def on_ready():
@@ -1132,7 +1132,6 @@ def load_reminders():
 def save_reminders(reminders):
     with open('reminders.json', 'w') as file:
         json.dump(reminders, file, indent=4)
-
 
 @reminder_group.command(name="new", description="Crée un nouveau rappel.")
 @app_commands.describe(rappel_nom="Nom du rappel.", rappel_date="Date à laquelle le rappel est envoyé. (Format: JJ/MM/AAAA HH:MM)")
