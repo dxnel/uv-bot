@@ -16,9 +16,6 @@ Liste des fonctionnalistés du bot.
 - **/log set** : définit un salon de logging. *(ACTIVE LE LOGGING)*
 - **/loveletter** : envoie une lettre d'amour à l'utilisateur de votre choix.
 - **/profileavatar** : affiche l'avatar de profil d'un utilisateur.
-- **/reminder list** : affiche la liste de vos rappels.
-- **/reminder new** : crée un nouveau rappel.
-- **/reminder remove** : supprime un rappel existant.
 - **/rename** : renomme un salon textuel.
 - **/say** : envoie un message personnalisé sur un salon textuel.
 - **/servericon** : affiche l'icône du serveur actuel.
