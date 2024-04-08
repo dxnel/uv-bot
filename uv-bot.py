@@ -782,7 +782,7 @@ async def on_scheduled_event_update(before, after):
         else:
             print("Le salon de logging n'a pas été défini.")
 
-@bot.tree.command(name="say", description="Envoie un message personnalisé sur un salon textuel.")
+@bot.tree.command(name="say", description="Envoie un message personnalisé sur un salon textuel")
 @app_commands.describe(texte="Le message à envoyer", salon_textuel="Lien du salon textuel")
 async def say(interaction: discord.Interaction, texte: str, salon_textuel: discord.TextChannel = None):
     if interaction.user.guild_permissions.administrator:
@@ -799,7 +799,7 @@ async def say(interaction: discord.Interaction, texte: str, salon_textuel: disco
             embed = discord.Embed(description=f"❌** Erreur｜**" + f"{erreur}" , color=discord.Color.red())
             await interaction.response.send_message(embed=embed, ephemeral=True)               
 
-@bot.tree.command(name="avatar",description="Affiche l'avatar d'un utilisateur.")
+@bot.tree.command(name="avatar",description="Affiche l'avatar d'un utilisateur")
 @app_commands.describe(utilisateur="L'utilisateur dont vous voulez connaitre l'avatar")
 async def avatar(interaction: discord.Interaction,  utilisateur: discord.Member ):
     embed = discord.Embed(title=f"Avatar de {utilisateur.display_name}",  color=discord.Color.from_rgb(193,168,233) )
@@ -809,7 +809,7 @@ async def avatar(interaction: discord.Interaction,  utilisateur: discord.Member 
     embed.add_field(name="", value=download_link)
     await interaction.response.send_message(embed=embed)
 
-@bot.tree.command(name="profileavatar",description="Affiche l'avatar de profil d'un utilisateur.")
+@bot.tree.command(name="profileavatar",description="Affiche l'avatar de profil d'un utilisateur")
 @app_commands.describe(utilisateur="L'utilisateur dont vous voulez connaitre l'avatar")
 async def profileavatar(interaction: discord.Interaction,  utilisateur: discord.Member ):
     embed = discord.Embed(title=f"Avatar de {utilisateur.display_name}",  color=discord.Color.from_rgb(193,168,233) )
@@ -819,7 +819,7 @@ async def profileavatar(interaction: discord.Interaction,  utilisateur: discord.
     embed.add_field(name="", value=download_link)
     await interaction.response.send_message(embed=embed)
 
-@bot.tree.command(name="servericon",description="Affiche l'icône du serveur actuel.")
+@bot.tree.command(name="servericon",description="Affiche l'icône du serveur actuel")
 async def servericon(interaction: discord.Interaction):
     guild_id = interaction.guild_id
     guild = bot.get_guild(guild_id)
@@ -830,7 +830,7 @@ async def servericon(interaction: discord.Interaction):
 
     await interaction.response.send_message(embed=embed)
 
-@bot.tree.command(name="help",description="Affiche des informations concernant [uv]bot.")
+@bot.tree.command(name="help",description="Affiche des informations concernant [uv]bot")
 async def help(interaction: discord.Interaction):
  
     embed = discord.Embed(title="[uv]bot", description="[uv]bot est un bot discord crée exclusivement pour le serveur ultraviolet et présente de nombreuses fonctionnalitées essentielles.", color=discord.Color.from_rgb(193,168,233))
@@ -841,7 +841,7 @@ async def help(interaction: discord.Interaction):
     view.add_item(item=item)
     await interaction.response.send_message(embed=embed,view=view)
 
-@bot.tree.command(name="loveletter",description="Envoie une lettre d'amour à l'utilisateur de votre choix.")
+@bot.tree.command(name="loveletter",description="Envoie une lettre d'amour à l'utilisateur de votre choix")
 @app_commands.describe(utilisateur="L'utilisateur dont vous voulez connaitre l'avatar", message="Le message que vous voulez envoyer à votre cutie lover", anonyme="Afichage (ou non) de votre pseudo")
 async def loveletter(interaction: discord.Interaction, utilisateur: discord.Member , message: str, anonyme: bool = False):
     guild_id = interaction.guild_id
@@ -859,7 +859,7 @@ async def loveletter(interaction: discord.Interaction, utilisateur: discord.Memb
         embed = discord.Embed(description=f"✅** Bravo!｜**" + "💌 Lettre d'amour envoyé à " + utilisateur.mention , color=discord.Color.green())
         await interaction.response.send_message(embed=embed, ephemeral=True)
     
-@bot.tree.command(name="archive", description="Archive un salon textuel.")
+@bot.tree.command(name="archive", description="Archive un salon textuel")
 @app_commands.describe(salon_textuel="Lien du salon textuel")
 async def archive(interaction: discord.Interaction, salon_textuel: discord.TextChannel):
 
@@ -887,7 +887,7 @@ async def archive(interaction: discord.Interaction, salon_textuel: discord.TextC
             embed = discord.Embed(description=f"❌** Erreur｜**" + f"{erreur}" , color=discord.Color.red())
             await interaction.response.send_message(embed=embed, ephemeral=True)
    
-@bot.tree.command(name="lock",description="Désactive un salon textuel.")
+@bot.tree.command(name="lock",description="Désactive un salon textuel")
 @app_commands.describe(salon_textuel="Le salon que vous souhaitez désactiver")
 async def lock(interaction: discord.Interaction, salon_textuel: discord.TextChannel = None):
      if interaction.user.guild_permissions.administrator:
@@ -905,7 +905,7 @@ async def lock(interaction: discord.Interaction, salon_textuel: discord.TextChan
              embed = discord.Embed(description=f"❌** Erreur｜**" + f"{erreur}" , color=discord.Color.red())
              await interaction.response.send_message(embed=embed, ephemeral=True)    
 
-@bot.tree.command(name="unlock",description="Réactive un salon textuel désactivé.")
+@bot.tree.command(name="unlock",description="Réactive un salon textuel désactivé")
 @app_commands.describe(salon_textuel="Le salon que vous souhaitez réactiver")
 async def unlock(interaction: discord.Interaction, salon_textuel: discord.TextChannel = None):
      if interaction.user.guild_permissions.administrator:
@@ -923,7 +923,7 @@ async def unlock(interaction: discord.Interaction, salon_textuel: discord.TextCh
              embed = discord.Embed(description=f"❌** Erreur｜**" + f"{erreur}" , color=discord.Color.red())
              await interaction.response.send_message(embed=embed, ephemeral=True)    
 
-@bot.tree.command(name="rename", description="Renomme un salon textuel.")
+@bot.tree.command(name="rename", description="Renomme un salon textuel")
 @app_commands.describe(salon_textuel="Lien du salon textuel", nouveau_nom="Nouveau nom du salon textuel")
 async def rename(interaction: discord.Interaction, salon_textuel: discord.TextChannel, nouveau_nom: str):
     if interaction.user.guild_permissions.administrator:
@@ -958,7 +958,7 @@ def save_tags(tags):
 
 tag_group = app_commands.Group(name="tag", description="Commandes liés aux tags")
 
-@tag_group.command(name="use", description="Utilise un tag enregistré.")
+@tag_group.command(name="use", description="Utilise un tag enregistré")
 @app_commands.describe(tag_nom="Nom du tag")
 async def use_tag(interaction: discord.Interaction, tag_nom: str):
     tags = load_tags()
@@ -976,7 +976,7 @@ async def use_tag(interaction: discord.Interaction, tag_nom: str):
         embed = discord.Embed(description="❌ **Erreur｜** Ce tag n'existe pas.", color=discord.Color.red())
         await interaction.response.send_message(embed=embed, ephemeral=True)  
 
-@tag_group.command(name="new", description="Crée un nouveau tag.")
+@tag_group.command(name="new", description="Crée un nouveau tag")
 @app_commands.describe(tag_nom="Nom du tag", texte="Texte intégré au tag", privé="Tag accessible par tous (ou non)")
 async def create_tag(interaction: discord.Interaction, tag_nom: str, texte: str, privé: bool = False):
     tags = load_tags()
@@ -990,7 +990,7 @@ async def create_tag(interaction: discord.Interaction, tag_nom: str, texte: str,
     embed = discord.Embed(description=f"✅ **Bravo!｜** Le tag `{tag_nom}` a été créé avec succès !", color=discord.Color.green())
     await interaction.response.send_message(embed=embed)
 
-@tag_group.command(name="remove", description="Supprime un tag créé par vous.")
+@tag_group.command(name="remove", description="Supprime un tag créé par vous")
 @app_commands.describe(tag_nom="Nom du tag")
 async def remove_tag(interaction: discord.Interaction, tag_nom: str):
     tags = load_tags()
@@ -1009,7 +1009,7 @@ async def remove_tag(interaction: discord.Interaction, tag_nom: str):
         embed = discord.Embed(description="❌ **Erreur｜** Vous n'êtes pas l'auteur de ce tag ou vous n'avez pas les permissions requises.", color=discord.Color.red())
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
-@tag_group.command(name="list", description="Affiche l'ensemble des tags.")
+@tag_group.command(name="list", description="Affiche l'ensemble des tags")
 async def tag_list(interaction: discord.Interaction):
     tags = load_tags()
     if not tags:
@@ -1041,7 +1041,7 @@ async def tag_list(interaction: discord.Interaction):
     paginator = Paginator.Simple()
     await paginator.start(interaction, pages=pages)
 
-@bot.tree.command(name="customemoji", description="Affiche l'image d'un emoji personnalisé.")
+@bot.tree.command(name="customemoji", description="Affiche l'image d'un emoji personnalisé")
 @app_commands.describe(emoji_nom="Nom de l'emoji personnalisé")
 async def custom_emoji(interaction: discord.Interaction, emoji_nom: str):
     emoji = discord.utils.get(interaction.guild.emojis, name=emoji_nom)
@@ -1103,8 +1103,8 @@ def save_config(config):
 log_group = app_commands.Group(name="log", description="Commandes liés aux logs")
 bot.tree.add_command(log_group)
 
-@log_group.command(name="set", description="Définit un salon de logging.")
-@app_commands.describe(salon_textuel="Lien du salon choisi.")
+@log_group.command(name="set", description="Définit un salon de logging")
+@app_commands.describe(salon_textuel="Lien du salon choisi")
 async def set_log_channel(interaction: discord.Interaction, salon_textuel: discord.TextChannel):
 
     log_channel = salon_textuel.id
