@@ -39,7 +39,6 @@ async def on_ready():
         print(f"Synced {len(synced)} command(s)")
     except Exception as e:
         print(e)
-    await check_reminders(bot)
         
 @bot.event
 async def on_message(message):
@@ -838,7 +837,7 @@ async def help(interaction: discord.Interaction):
     embed.add_field(name=f"Version", value=f"{version}", inline=True)
     view = discord.ui.View() 
     style = discord.ButtonStyle.grey 
-    item = discord.ui.Button(style=style, label="Github", url="https://github.com/dxnuv/uv-bot")  
+    item = discord.ui.Button(style=style, label="Github", url="https://github.com/dxnel/uv-bot")  
     view.add_item(item=item)
     await interaction.response.send_message(embed=embed,view=view)
 
@@ -1115,115 +1114,6 @@ async def set_log_channel(interaction: discord.Interaction, salon_textuel: disco
     embed = discord.Embed(description=f"✅** Bravo!｜**" + f"Le salon textuel {salon_textuel.jump_url} a été défini comme salon de logging avec succès." , color=discord.Color.green())
     await interaction.response.send_message(embed=embed)
 
-reminder_group = app_commands.Group(name="reminder", description="Commandes liés aux rappels")
-bot.tree.add_command(reminder_group)
-
-def load_reminders():
-    try:
-        with open('reminders.json', 'r') as file:
-            return json.load(file)
-    except FileNotFoundError:
-        print("Le fichier reminders.json n'a pas été trouvé.")
-        return {}
-    except Exception as e:
-        print(f"Une erreur s'est produite lors de la lecture du fichier reminders.json : {e}")
-        return {}
-
-def save_reminders(reminders):
-    with open('reminders.json', 'w') as file:
-        json.dump(reminders, file, indent=4)
-
-@reminder_group.command(name="new", description="Crée un nouveau rappel.")
-@app_commands.describe(rappel_nom="Nom du rappel.", rappel_date="Date à laquelle le rappel est envoyé. (Format: JJ/MM/AAAA HH:MM)")
-async def new_reminder(interaction: discord.Interaction, rappel_nom: str, rappel_date: str):
-    nom = rappel_nom
-    date = rappel_date
-    reminders = load_reminders()
-    
-    try:
-        date_obj = datetime.strptime(date, "%d/%m/%Y %H:%M")
-    except ValueError:
-        embed = discord.Embed(description="❌ **Erreur｜** Format de date invalide. Utilisez le format JJ/MM/AAAA HH:MM.", color=discord.Color.red())
-        await interaction.response.send_message(embed=embed, ephemeral=True)
-        return
-    
-    reminders[nom] = {
-        "utilisateur": str(interaction.user.id),
-        "date": date_obj.strftime("%d/%m/%Y %H:%M"),
-    }
-    
-    save_reminders(reminders)
-    
-    embed = discord.Embed(description=f"✅ **Bravo!｜** Le rappel `{nom}` a été créé avec succès ! Le rappel vous sera envoyé par message privé à l'heure programmée.", color=discord.Color.green())
-    await interaction.response.send_message(embed=embed)
-
-@reminder_group.command(name="remove", description="Supprime un rappel existant.")
-@app_commands.describe(rappel_nom="Nom du rappel à supprimer.")
-async def delete_reminder(interaction: discord.Interaction, rappel_nom: str):
-    reminders = load_reminders()
-    user_id = str(interaction.user.id)
-    
-    if rappel_nom not in reminders:
-        embed = discord.Embed(description="❌ **Erreur｜** Ce rappel n'existe pas.", color=discord.Color.red())
-        await interaction.response.send_message(embed=embed, ephemeral=True)
-        return
-    
-    rappel = reminders[rappel_nom]
-    
-    if rappel["utilisateur"] != user_id:
-        embed = discord.Embed(description="❌ **Erreur｜** Vous n'êtes pas autorisé à supprimer ce rappel.", color=discord.Color.red())
-        await interaction.response.send_message(embed=embed, ephemeral=True)
-        return
-    
-    del reminders[rappel_nom]
-    save_reminders(reminders)
-    
-    embed = discord.Embed(description=f"✅ **Bravo!｜** Le rappel `{rappel_nom}` a été supprimé avec succès !", color=discord.Color.green())
-    await interaction.response.send_message(embed=embed)
-
-@reminder_group.command(name="list", description="Affiche la liste de vos rappels.")
-async def list_reminder(interaction: discord.Interaction):
-    reminders = load_reminders()
-    user_id = str(interaction.user.id)
-    
-    user_reminders = [(nom, rappel) for nom, rappel in reminders.items() if rappel["utilisateur"] == user_id]
-    
-    if not user_reminders:
-        embed = discord.Embed(title=f"Rappels｜{interaction.user.display_name}", description=f"Aucun rappel n'a été créé 😔. Utilisez `/reminder new` pour créer un nouveau rappel.", color=discord.Color.from_rgb(193, 168, 233))
-        await interaction.response.send_message(embed=embed)
-        return
-    
-    embed = discord.Embed(title=f"Rappels｜{interaction.user.display_name}", description=f"Liste des rappels de l'utilisateur.", color=discord.Color.from_rgb(193, 168, 233))
-    
-    for nom, rappel in user_reminders:
-        rappel_date = datetime.strptime(rappel["date"], "%d/%m/%Y %H:%M")
-        timestamp = int(rappel_date.timestamp())
-        
-        embed.add_field(
-            name=nom,
-            value=f"`Date :` <t:{int(timestamp)}:F>",
-            inline=False
-        )
-    
-    await interaction.response.send_message(embed=embed)
-
-async def check_reminders(bot):
-    while True:
-        reminders = load_reminders()
-        current_time = datetime.now()
-        
-        for nom, rappel in list(reminders.items()):
-            rappel_time = datetime.strptime(rappel["date"], "%d/%m/%Y %H:%M")
-            
-            if current_time >= rappel_time:
-                utilisateur = await bot.fetch_user(int(rappel["utilisateur"]))
-                embed = discord.Embed(title=f"Rappel｜{utilisateur}", description=f"\n⏰ Drrriiingg!!! Drrriiingg!! C'est l'heure {utilisateur.mention}! \n\nVotre rappel `{nom}` vient de s'enclencher." , color=discord.Color.from_rgb(193, 168, 233))
-                
-                await utilisateur.send(embed=embed)
-                del reminders[nom]
-                save_reminders(reminders)
-        
-        await asyncio.sleep(30)  
 
 config = load_config()
 token = config['token']
