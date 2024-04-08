@@ -18,7 +18,7 @@ intents.presences = True
 intents.guild_scheduled_events = True
 
 bot = commands.Bot(command_prefix='uv!', intents=intents)
-version = "1.0.0-rc3 [310324]"
+version = "1.0.0 [080424]"
 
 @bot.event
 async def on_ready():
