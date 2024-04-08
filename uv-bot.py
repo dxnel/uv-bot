@@ -881,7 +881,7 @@ async def archive(interaction: discord.Interaction, salon_textuel: discord.TextC
              await salon_textuel.edit(position=0)
 
              embed = discord.Embed(description=f"✅** Bravo!｜**" + f"Le salon textuel `{salon_textuel_og}` a été archivé avec succès." , color=discord.Color.green())
-             await interaction.response.send_message(embed=embed, ephemeral=True)
+             await interaction.response.send_message(embed=embed)
     else:
             erreur = "Vous n'avez pas les permissions requises pour éxécuter cette commande."
             embed = discord.Embed(description=f"❌** Erreur｜**" + f"{erreur}" , color=discord.Color.red())
