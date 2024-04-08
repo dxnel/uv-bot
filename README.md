@@ -1,6 +1,6 @@
 # [uv]bot 
 
-![](https://dxnuv.github.io/uv-bot/images/uvpng-180x.png)
+![](https://dxnel.github.io/uv-bot/images/uvpng-180x.png)
 
 ⚙️ Ce bot offre à ton serveur un max de ohio rizz pour faire trembler les minettes 🥵🫨. \
 🚫 Bot exclusif au serveur `ultraviolet [uv]`.
