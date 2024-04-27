@@ -1,4 +1,5 @@
 import discord
+import random
 from discord.ext import commands
 from discord import app_commands
 from datetime import datetime
@@ -16,14 +17,45 @@ intents.message_content = True
 intents.members = True
 intents.presences = True
 intents.guild_scheduled_events = True
+intents.voice_states = True
 
 bot = commands.Bot(command_prefix='uv!', intents=intents)
 version = "1.0.0 [080424]"
 
+# Charger et sauvegarder les orbs depuis et vers un fichier JSON
+def load_orbs():
+    try:
+        with open('orbs.json', 'r') as file:
+            orbs = json.load(file)
+    except FileNotFoundError:
+        orbs = {}
+    return orbs
+
+def save_orbs(orbs):
+    with open('orbs.json', 'w') as file:
+        json.dump(orbs, file, indent=4)
+
+async def orbs_for_voice():
+    await bot.wait_until_ready()
+    while not bot.is_closed():
+        orbs = load_orbs()
+        for guild in bot.guilds:
+            for voice_channel in guild.voice_channels:
+                for member in voice_channel.members:
+                    user_id = str(member.id)
+                    if user_id in orbs:
+                        orbs[user_id] += 0.1
+                    else:
+                        orbs[user_id] = 0.1
+        save_orbs(orbs)
+        await asyncio.sleep(60)  # Attendre 60 secondes (1 minute)
+
+    
 @bot.event
 async def on_ready():
     print(f'Logged in as {bot.user.name}')
     await bot.change_presence(status=discord.Status.online, activity=discord.Game('/help｜ultraviolet [uv]'))
+    bot.loop.create_task(orbs_for_voice())
     config = load_config() 
     log_channel_id = config.get('log_channel') 
     if log_channel_id:
@@ -1113,6 +1145,77 @@ async def set_log_channel(interaction: discord.Interaction, salon_textuel: disco
     save_config(config)
     embed = discord.Embed(description=f"✅** Bravo!｜**" + f"Le salon textuel {salon_textuel.jump_url} a été défini comme salon de logging avec succès." , color=discord.Color.green())
     await interaction.response.send_message(embed=embed)
+
+
+##ORBS
+
+orb_group = app_commands.Group(name="orb", description="Commandes liés aux orbes")
+bot.tree.add_command(orb_group)
+
+@orb_group.command(name="leaderboard", description="Affiche le classement du nombre d'orbes (points) par membre")
+async def orbs_list(interaction: discord.Interaction):
+    orbs = load_orbs()
+    if not orbs:
+        embed = discord.Embed(title="Classement des orbes [uv]", description="Aucune orbe n'a été gagné 😔.", color=discord.Color.from_rgb(193,168,233 ))
+        await interaction.response.send_message(embed=embed)
+        return
+
+    # Tri des utilisateurs par nombre d'orbes
+    sorted_orbs = sorted(orbs.items(), key=lambda x: (-int(x[1]), x[0]))
+
+    pages = []
+    page_content = ""
+    users_per_page = 5
+    current_page = 1
+    total_pages = (len(sorted_orbs) - 1) // users_per_page + 1
+
+    for index, (user_id, orbs_count) in enumerate(sorted_orbs, start=1):
+        user = interaction.guild.get_member(int(user_id))
+        if user:
+            user_name = user.display_name
+        else:
+            user_name = "Utilisateur Inconnu"
+        page_content += f"**{user_name}** : {int(orbs_count)} <:uvbotorbe:1233831689470607360> \n\n"
+
+        if index % users_per_page == 0 or index == len(sorted_orbs):
+            pages.append(discord.Embed(title=f"Classement des orbes [uv] ({current_page}/{total_pages})", description=page_content, color=discord.Color.from_rgb(193,168,233)))
+            page_content = ""
+            current_page += 1
+
+    paginator = Paginator.Simple()
+    await paginator.start(interaction, pages=pages)
+
+
+@bot.event
+async def on_message(message):
+    if message.author.bot:
+        return
+
+    orbs = load_orbs()
+    user_id = str(message.author.id)
+    
+    if user_id in orbs:
+        orbs[user_id] += 0.1
+    else:
+        orbs[user_id] = 0.1
+    
+    save_orbs(orbs)
+
+@bot.event
+async def on_raw_reaction_add(payload):
+    if payload.guild_id is None:
+        return
+
+    user_id = str(payload.user_id)
+
+    orbs = load_orbs()
+
+    if user_id in orbs:
+        orbs[user_id] += 0.05
+    else:
+        orbs[user_id] = 0.05
+
+    save_orbs(orbs)
 
 
 config = load_config()
