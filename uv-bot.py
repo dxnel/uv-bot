@@ -456,8 +456,8 @@ async def on_member_join(member):
     embed = discord.Embed(description=f"{member.mention} a rejoint le serveur", color=discord.Color.green())
     embed.set_author(name=member.display_name, icon_url=member.avatar)
     embed.set_footer(text=f"ID : {member.id}")
-    embed.add_field(name="Date de création du compte", value=f"<t:{int(member.created_at.timestamp())}:F>", inline=False)
     embed.add_field(name="Date d'arrivée", value=f"<t:{int(time.time())}:F>", inline=False)
+    embed.add_field(name="Date de création du compte", value=f"<t:{int(member.created_at.timestamp())}:F>", inline=False)
     embed.add_field(name="Nombre de membres", value=len(member.guild.members), inline=False)
 
     config = load_config()
@@ -476,8 +476,8 @@ async def on_member_remove(member):
     embed = discord.Embed(description=f"{member.mention} a quitté le serveur", color=discord.Color.red())
     embed.set_author(name=member.display_name, icon_url=member.avatar)
     embed.set_footer(text=f"ID : {member.id}")
-    embed.add_field(name="Date d'arrivée", value=f"<t:{int(member.joined_at.timestamp())}:F>", inline=False)
     embed.add_field(name="Date de départ", value=f"<t:{int(time.time())}:F>", inline=False)
+    embed.add_field(name="Date d'arrivée", value=f"<t:{int(member.joined_at.timestamp())}:F>", inline=False)
 
     config = load_config()
     log_channel_id = config.get('log_channel')
