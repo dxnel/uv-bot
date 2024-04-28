@@ -1,5 +1,4 @@
 import discord
-import random
 from discord.ext import commands
 from discord import app_commands
 from datetime import datetime
@@ -26,7 +25,6 @@ intents.guild_messages = True
 bot = commands.Bot(command_prefix='uv!', intents=intents)
 version = "1.1.0-Beta1 [280424]"
 
-# Charger et sauvegarder les orbs depuis et vers un fichier JSON
 def load_orbs():
     try:
         with open('orbs.json', 'r') as file:
@@ -52,7 +50,7 @@ async def orbs_for_voice():
                     else:
                         orbs[user_id] = 0.1
         save_orbs(orbs)
-        await asyncio.sleep(60)  # Attendre 60 secondes (1 minute)
+        await asyncio.sleep(60)  
 
     
 @bot.event
@@ -1150,9 +1148,6 @@ async def set_log_channel(interaction: discord.Interaction, salon_textuel: disco
     embed = discord.Embed(description=f"✅** Bravo!｜**" + f"Le salon textuel {salon_textuel.jump_url} a été défini comme salon de logging avec succès." , color=discord.Color.green())
     await interaction.response.send_message(embed=embed)
 
-
-##ORBS
-
 orb_group = app_commands.Group(name="orb", description="Commandes liés aux orbes")
 bot.tree.add_command(orb_group)
 
@@ -1164,7 +1159,6 @@ async def orbs_list(interaction: discord.Interaction):
         await interaction.response.send_message(embed=embed)
         return
 
-    # Tri des utilisateurs par nombre d'orbes
     sorted_orbs = sorted(orbs.items(), key=lambda x: (-int(x[1]), x[0]))
 
     pages = []
@@ -1204,7 +1198,6 @@ async def shop(interaction: discord.Interaction):
         await interaction.response.send_message(embed=embed)
         return
 
-    # Tri des items par prix
     sorted_items = sorted(shop_items, key=lambda x: x['price'])
 
     pages = []
