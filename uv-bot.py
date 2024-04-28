@@ -1151,7 +1151,7 @@ async def set_log_channel(interaction: discord.Interaction, salon_textuel: disco
 orb_group = app_commands.Group(name="orb", description="Commandes liés aux orbes")
 bot.tree.add_command(orb_group)
 
-@orb_group.command(name="leaderboard", description="Affiche le classement du nombre d'orbes (points) par membre")
+@orb_group.command(name="leaderboard", description="Affiche le classement des membres selon leur nombre d'orbes (points)")
 async def orbs_list(interaction: discord.Interaction):
     orbs = load_orbs()
     if not orbs:
