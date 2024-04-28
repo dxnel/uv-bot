@@ -1373,7 +1373,7 @@ async def on_raw_reaction_add(payload):
 game_group = app_commands.Group(name="game", description="Commandes liés aux jeux")
 bot.tree.add_command(game_group)
 
-@game_group.command(name="number-guessing",description="Devine le nombre correct et remporte des orbes!")
+@game_group.command(name="number-guessing",description="Devinez le nombre correct et remportez des orbes")
 async def guess_number(interaction: discord.Interaction):
 
     correct_number = random.randint(1, 500)
