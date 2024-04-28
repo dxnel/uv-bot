@@ -1198,18 +1198,19 @@ async def shop(interaction: discord.Interaction):
         await interaction.response.send_message(embed=embed)
         return
 
-    sorted_items = sorted(shop_items, key=lambda x: x['price'])
+    sorted_items = sorted(shop_items, key=lambda x: x['price'], reverse=True)
 
     pages = []
     page_content = ""
-    items_per_page = 5
+    items_per_page = 3
     current_page = 1
     total_pages = (len(sorted_items) - 1) // items_per_page + 1
 
     for index, item in enumerate(sorted_items, start=1):
-        page_content += f"**{item['emoji']} {item['name']}** : {item['price']} <:uvbotorbe:1233831689470607360>\n{item['description']}\n\n"
+        page_content += f"**{item['emoji']} {item['name']}**\n **Prix :** {item['price']} <:uvbotorbe:1233831689470607360>\n **Tag :** `{item['tag']}`\n{item['description']}\n\n"
         if index % items_per_page == 0 or index == len(sorted_items):
             embed = discord.Embed(title=f"Magasin ({current_page}/{total_pages})", description=page_content, color=discord.Color.from_rgb(193, 168, 233))
+            embed.set_footer(text="La commande /orb buy [objet_tag] permet l'achat d'un objet.")
             pages.append(embed)
             page_content = ""
             current_page += 1
@@ -1244,15 +1245,71 @@ class CustomRole(discord.ui.Modal, title='Rôle Personnalisé'):
 
         traceback.print_exception(type(error), error, error.__traceback__)
 
+class SendMsgAn(discord.ui.Modal, title='Message à envoyer'):
+
+    text = discord.ui.TextInput(
+        label='Texte',
+        placeholder='puceau moi ? serieusement ^^ haha on me l avait pas sortie celle la depuis loooongtemps :)',
+        required=True,
+        max_length=300,
+        style=discord.TextStyle.long,
+    )
+
+    async def on_submit(self, interaction: discord.Interaction):
+
+        channel = bot.get_channel(1142786171441786910)
+        embed_an = discord.Embed(title=f"😎 Un membre du serveur a quelque-chose à dire...", color=discord.Color.from_rgb(193, 168, 233))
+        embed_an.set_thumbnail(url=interaction.user.avatar)
+        embed_an.add_field(name="Message :", value=f"{self.text.value}", inline=False)
+        embed_an.add_field(name="Signé, ", value=interaction.user.mention + " 🥰")
+        embed_an.set_footer(text="Tu veux envoyer un message super swag comme celui-là? Utilise la commande /orb buy pour acheter ce produit")
+        await channel.send(embed=embed_an)
+
+        embed = discord.Embed(description=f"✅** Bravo!｜**" + "Message envoyé sur " + channel.jump_url , color=discord.Color.green())
+        await interaction.response.send_message(embed=embed)
+
+    async def on_error(self, interaction: discord.Interaction, error: Exception) -> None:
+        embed = discord.Embed(description=f"❌ **Erreur｜** Une erreur inconnue est survenue.", color=discord.Color.red())
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+
+        traceback.print_exception(type(error), error, error.__traceback__)
+
+@orb_group.command(name="me", description="Obtient le nombre d'orbes d'un utilisateur")
+@app_commands.describe(utilisateur="Utilisateur dont vous voulez connaître le nombre d'orbes")
+async def orbme(interaction: discord.Interaction, utilisateur: discord.Member = None):
+    if utilisateur is None:
+
+        user_id = str(interaction.user.id)
+        orbs = load_orbs()
+        if user_id in orbs:
+            embed = discord.Embed(description=f"**{interaction.user.display_name}** : {round(orbs[user_id])} <:uvbotorbe:1233831689470607360> ", color=discord.Color.from_rgb(193, 168, 233))
+            await interaction.response.send_message(embed=embed)
+        else:
+            embed = discord.Embed(description=f"❌ **Erreur｜** Vous n'avez aucune orbe.", color=discord.Color.red())
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+    else:
+
+        user_id = str(utilisateur.id)
+        orbs = load_orbs()
+        if user_id in orbs:
+             embed = discord.Embed(title=f"**{utilisateur.display_name}** : {round(orbs[user_id])} <:uvbotorbe:1233831689470607360> ", color=discord.Color.from_rgb(193, 168, 233))
+             await interaction.response.send_message(embed=embed)
+        else:
+            embed = discord.Embed(description=f"❌ **Erreur｜** Cet utilisateur n'a aucune orbe.", color=discord.Color.red())
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+
+
+     
 
 @orb_group.command(name="buy", description="Acheter un objet dans le magasin")
-@app_commands.describe(objet_nom="Nom de l'objet à acheter")
-async def buy_item(interaction: discord.Interaction, objet_nom: str):
+@app_commands.describe(objet_tag="Tag de l'objet à acheter")
+async def buy_item(interaction: discord.Interaction, objet_tag: str):
+    guild = interaction.guild
     shop_items = load_shop()
     
     target_item = None
     for item in shop_items:
-        if item['name'].lower() == objet_nom.lower():
+        if item['tag'].lower() == objet_tag.lower():
             target_item = item
             break
     
@@ -1271,10 +1328,15 @@ async def buy_item(interaction: discord.Interaction, objet_nom: str):
     orbs[user_id] -= target_item['price']
     save_orbs(orbs)
 
-    if target_item['type'] == 'custom-role':
+    if target_item['tag'] == 'role-perso':
         await interaction.response.send_modal(CustomRole())
-        embed = discord.Embed(description=f"✅** Bravo!｜**" + f"Objet {objet_nom} acheté avec succès", color=discord.Color.green())
+        embed = discord.Embed(description=f"✅** Bravo!｜**" + f"Objet {target_item['name']} acheté avec succès", color=discord.Color.green())
         await interaction.response.send_message(embed=embed)    
+
+    if target_item['tag'] == 'annonce-message':
+        await interaction.response.send_modal(SendMsgAn())
+        embed = discord.Embed(description=f"✅** Bravo!｜**" + f"Objet {target_item['name']} acheté avec succès", color=discord.Color.green())
+        await interaction.response.send_message(embed=embed)  
 
 @bot.event
 async def on_message(message):
