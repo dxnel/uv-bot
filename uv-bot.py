@@ -7,6 +7,7 @@ import time
 import Paginator
 import asyncio
 import json
+import random
 import requests
 import base64
 import re
@@ -23,7 +24,7 @@ intents.guild_messages = True
 
 
 bot = commands.Bot(command_prefix='uv!', intents=intents)
-version = "1.1.0-Beta1 [280424]"
+version = "1.1.0-Beta2 [290424]"
 
 def load_orbs():
     try:
@@ -1368,6 +1369,84 @@ async def on_raw_reaction_add(payload):
         orbs[user_id] = 0.05
 
     save_orbs(orbs)
+
+game_group = app_commands.Group(name="game", description="Commandes liés aux jeux")
+bot.tree.add_command(game_group)
+
+@game_group.command(name="number-guessing",description="Devine le nombre correct et remporte des orbes!")
+async def guess_number(interaction: discord.Interaction):
+
+    correct_number = random.randint(1, 500)
+    
+    start_time = time.time()
+    participants = []
+    winner = "Aucun"
+    
+    embed=discord.Embed(title="🎲 Jeu : deviner le nombre correct", description="Le but du jeu est de trouver le nombre correct entre **1** et **500** en moins de **30 secondes**! Le vainqueur reçoit un nombre d'orbes <:uvbotorbe:1233831689470607360> en fonction du temps pris pour trouver le nombre correct.", color=discord.Color.from_rgb(193, 168, 233))
+    embed.add_field(name="Jeu générée par", value=f"{interaction.user.display_name}", inline=True)
+    embed.set_footer(text="Ce jeu est pas fou? Les commandes /game permettent de jouer à une belle séléction de jeux super swag")
+    await interaction.response.send_message(embed=embed)
+    print(correct_number)
+
+    def check(message):
+        return message.author != bot.user and message.channel == interaction.channel and message.content.isdigit()
+
+    while time.time() - start_time < 30:
+            message = await bot.wait_for('message', check=check) 
+            guess = int(message.content)
+
+            if message.author.display_name not in participants:
+                participants.append(message.author.display_name)
+
+            if guess == correct_number:
+                winner = message.author
+                break
+            elif guess < correct_number:
+                embed=discord.Embed(description="⬆️ Le nombre à devenir est plus grand !", color=discord.Color.from_rgb(193, 168, 233))
+                await interaction.channel.send(embed=embed)
+            else:
+                embed=discord.Embed(description="⬇️ Le nombre à devenir est plus petit !", color=discord.Color.from_rgb(193, 168, 233))
+                await interaction.channel.send(embed=embed)
+
+    if winner:
+               embed = discord.Embed(title="😎 Fin du jeu!", description=f"{winner.mention} a trouvé le nombre correct **({correct_number})** !", color=discord.Color.from_rgb(193, 168, 233))
+               embed.add_field(name="Vainqueur", value=f"{winner.mention}", inline=True)
+               embed.add_field(name="Temps de jeu", value=f"{round(time.time() - start_time)} secondes", inline=True)
+               embed.add_field(name="Participant(s)", value=f"{', '.join(participants)}", inline=True)
+
+               if round(time.time() - start_time) < 10:
+                  recom  = round(random.uniform(1, 2),2)
+               elif round(time.time() - start_time) < 20:
+                  recom  = round(random.uniform(0.5, 1.5),2)
+               elif round(time.time() - start_time) < 30:
+                  recom  = round(random.uniform(0.1, 0.3),2)
+               embed.add_field(name="Récompense", value=f"{recom} <:uvbotorbe:1233831689470607360>", inline=True)
+
+               winner_id = str(winner.id)
+               orbs = load_orbs()
+               if winner_id in orbs:
+                 orbs[winner_id] += recom
+               else:
+                 orbs[winner_id] = recom
+               save_orbs(orbs)
+
+               embed.set_footer(text="Ce jeu est pas fou? Les commandes /game permettent de jouer à une belle séléction de jeux super swag")
+               await interaction.channel.send(embed=embed)
+    else:
+      embed = discord.Embed(title="⏳ Fin du jeu!", description=f"Le temps de jeu a expiré. Personne n'a trouvé le bon nombre à temps 🥺 **({correct_number})**.", color=discord.Color.from_rgb(193, 168, 233))
+      embed.add_field(name="Vainqueur", value="Aucun", inline=True)
+      embed.add_field(name="Temps de jeu", value=f"{round(time.time() - start_time)} secondes", inline=True)
+      embed.add_field(name="Participant(s)", value=f"{', '.join(participants)}", inline=True)
+      embed.add_field(name="Récompense", value="Aucune", inline=True)
+      embed.set_footer(text="Ce jeu est pas fou? Les commandes /game permettent de jouer à une belle séléction de jeux super swag")
+      await interaction.channel.send(embed=embed)
+
+
+
+    
+
+
+
 
 
 config = load_config()
