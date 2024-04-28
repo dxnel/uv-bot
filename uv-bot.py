@@ -1,7 +1,9 @@
 import discord
+import random
 from discord.ext import commands
 from discord import app_commands
 from datetime import datetime
+import traceback
 import time
 import Paginator
 import asyncio
@@ -16,14 +18,48 @@ intents.message_content = True
 intents.members = True
 intents.presences = True
 intents.guild_scheduled_events = True
+intents.voice_states = True
+intents.guilds = True
+intents.guild_messages = True
+
 
 bot = commands.Bot(command_prefix='uv!', intents=intents)
-version = "1.0.0 [080424]"
+version = "1.1.0-Beta1 [280424]"
 
+# Charger et sauvegarder les orbs depuis et vers un fichier JSON
+def load_orbs():
+    try:
+        with open('orbs.json', 'r') as file:
+            orbs = json.load(file)
+    except FileNotFoundError:
+        orbs = {}
+    return orbs
+
+def save_orbs(orbs):
+    with open('orbs.json', 'w') as file:
+        json.dump(orbs, file, indent=4)
+
+async def orbs_for_voice():
+    await bot.wait_until_ready()
+    while not bot.is_closed():
+        orbs = load_orbs()
+        for guild in bot.guilds:
+            for voice_channel in guild.voice_channels:
+                for member in voice_channel.members:
+                    user_id = str(member.id)
+                    if user_id in orbs:
+                        orbs[user_id] += 0.1
+                    else:
+                        orbs[user_id] = 0.1
+        save_orbs(orbs)
+        await asyncio.sleep(60)  # Attendre 60 secondes (1 minute)
+
+    
 @bot.event
 async def on_ready():
     print(f'Logged in as {bot.user.name}')
     await bot.change_presence(status=discord.Status.online, activity=discord.Game('/help｜ultraviolet [uv]'))
+    bot.loop.create_task(orbs_for_voice())
     config = load_config() 
     log_channel_id = config.get('log_channel') 
     if log_channel_id:
@@ -456,8 +492,8 @@ async def on_member_join(member):
     embed = discord.Embed(description=f"{member.mention} a rejoint le serveur", color=discord.Color.green())
     embed.set_author(name=member.display_name, icon_url=member.avatar)
     embed.set_footer(text=f"ID : {member.id}")
-    embed.add_field(name="Date de création du compte", value=f"<t:{int(member.created_at.timestamp())}:F>", inline=False)
     embed.add_field(name="Date d'arrivée", value=f"<t:{int(time.time())}:F>", inline=False)
+    embed.add_field(name="Date de création du compte", value=f"<t:{int(member.created_at.timestamp())}:F>", inline=False)
     embed.add_field(name="Nombre de membres", value=len(member.guild.members), inline=False)
 
     config = load_config()
@@ -476,8 +512,8 @@ async def on_member_remove(member):
     embed = discord.Embed(description=f"{member.mention} a quitté le serveur", color=discord.Color.red())
     embed.set_author(name=member.display_name, icon_url=member.avatar)
     embed.set_footer(text=f"ID : {member.id}")
-    embed.add_field(name="Date d'arrivée", value=f"<t:{int(member.joined_at.timestamp())}:F>", inline=False)
     embed.add_field(name="Date de départ", value=f"<t:{int(time.time())}:F>", inline=False)
+    embed.add_field(name="Date d'arrivée", value=f"<t:{int(member.joined_at.timestamp())}:F>", inline=False)
 
     config = load_config()
     log_channel_id = config.get('log_channel')
@@ -1113,6 +1149,170 @@ async def set_log_channel(interaction: discord.Interaction, salon_textuel: disco
     save_config(config)
     embed = discord.Embed(description=f"✅** Bravo!｜**" + f"Le salon textuel {salon_textuel.jump_url} a été défini comme salon de logging avec succès." , color=discord.Color.green())
     await interaction.response.send_message(embed=embed)
+
+
+##ORBS
+
+orb_group = app_commands.Group(name="orb", description="Commandes liés aux orbes")
+bot.tree.add_command(orb_group)
+
+@orb_group.command(name="leaderboard", description="Affiche le classement du nombre d'orbes (points) par membre")
+async def orbs_list(interaction: discord.Interaction):
+    orbs = load_orbs()
+    if not orbs:
+        embed = discord.Embed(title="Classement des orbes [uv]", description="Aucune orbe n'a été gagné 😔.", color=discord.Color.from_rgb(193,168,233 ))
+        await interaction.response.send_message(embed=embed)
+        return
+
+    # Tri des utilisateurs par nombre d'orbes
+    sorted_orbs = sorted(orbs.items(), key=lambda x: (-int(x[1]), x[0]))
+
+    pages = []
+    page_content = ""
+    users_per_page = 5
+    current_page = 1
+    total_pages = (len(sorted_orbs) - 1) // users_per_page + 1
+
+    for index, (user_id, orbs_count) in enumerate(sorted_orbs, start=1):
+        user = interaction.guild.get_member(int(user_id))
+        if user:
+            user_name = user.display_name
+        else:
+            user_name = "Utilisateur Inconnu"
+        page_content += f"**{user_name}** : {int(orbs_count)} <:uvbotorbe:1233831689470607360> \n\n"
+
+        if index % users_per_page == 0 or index == len(sorted_orbs):
+            pages.append(discord.Embed(title=f"Classement des orbes [uv] ({current_page}/{total_pages})", description=page_content, color=discord.Color.from_rgb(193,168,233)))
+            page_content = ""
+            current_page += 1
+
+    paginator = Paginator.Simple()
+    await paginator.start(interaction, pages=pages)
+
+def load_shop():
+    with open('shop.json', 'r', encoding='utf-8') as file:
+        shop_content = file.read()
+        shop_data = json.loads(shop_content)
+        shop_items = shop_data.get('items', [])
+    return shop_items
+
+@orb_group.command(name="shop", description="Affiche la liste des objets disponibles dans le magasin")
+async def shop(interaction: discord.Interaction):
+    shop_items = load_shop()
+    if not shop_items:
+        embed = discord.Embed(title="Magasin", description="Aucun objet n'est en vente au shop 😔.", color=discord.Color.from_rgb(193, 168, 233))
+        await interaction.response.send_message(embed=embed)
+        return
+
+    # Tri des items par prix
+    sorted_items = sorted(shop_items, key=lambda x: x['price'])
+
+    pages = []
+    page_content = ""
+    items_per_page = 5
+    current_page = 1
+    total_pages = (len(sorted_items) - 1) // items_per_page + 1
+
+    for index, item in enumerate(sorted_items, start=1):
+        page_content += f"**{item['emoji']} {item['name']}** : {item['price']} <:uvbotorbe:1233831689470607360>\n{item['description']}\n\n"
+        if index % items_per_page == 0 or index == len(sorted_items):
+            embed = discord.Embed(title=f"Magasin ({current_page}/{total_pages})", description=page_content, color=discord.Color.from_rgb(193, 168, 233))
+            pages.append(embed)
+            page_content = ""
+            current_page += 1
+
+    paginator = Paginator.Simple()
+    await paginator.start(interaction, pages=pages)
+
+
+class CustomRole(discord.ui.Modal, title='Rôle Personnalisé'):
+
+    name = discord.ui.TextInput(
+        label='Nom du rôle',
+        placeholder='Quoicoubeh...',
+        required=True,
+        max_length=20,
+    )
+
+    async def on_submit(self, interaction: discord.Interaction):
+
+        guild = interaction.guild
+        role_name = self.name.value
+        role = await guild.create_role(name=role_name,color=discord.Color.from_rgb(193, 168, 233),hoist=True)
+
+        await interaction.user.add_roles(role)
+
+        embed = discord.Embed(description=f"✅** Bravo!｜**" + f"Le rôle {role.mention} a été créé avec succès et attribué à {interaction.user.mention} !" , color=discord.Color.green())
+        await interaction.response.send_message(embed=embed)
+
+    async def on_error(self, interaction: discord.Interaction, error: Exception) -> None:
+        embed = discord.Embed(description=f"❌ **Erreur｜** Une erreur inconnue est survenue.", color=discord.Color.red())
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+
+        traceback.print_exception(type(error), error, error.__traceback__)
+
+
+@orb_group.command(name="buy", description="Acheter un objet dans le magasin")
+@app_commands.describe(objet_nom="Nom de l'objet à acheter")
+async def buy_item(interaction: discord.Interaction, objet_nom: str):
+    shop_items = load_shop()
+    
+    target_item = None
+    for item in shop_items:
+        if item['name'].lower() == objet_nom.lower():
+            target_item = item
+            break
+    
+    if target_item is None:
+        embed = discord.Embed(description=f"❌ **Erreur｜** Cet objet n'est pas disponible dans le shop.", color=discord.Color.red())
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+        return
+
+    orbs = load_orbs()
+    user_id = str(interaction.user.id)
+    if user_id not in orbs or orbs[user_id] < target_item['price']:
+        embed = discord.Embed(description=f"❌ **Erreur｜** Vous n'avez pas assez d'orbes pour acheter cet objet.", color=discord.Color.red())
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+        return
+
+    orbs[user_id] -= target_item['price']
+    save_orbs(orbs)
+
+    if target_item['type'] == 'custom-role':
+        await interaction.response.send_modal(CustomRole())
+        embed = discord.Embed(description=f"✅** Bravo!｜**" + f"Objet {objet_nom} acheté avec succès", color=discord.Color.green())
+        await interaction.response.send_message(embed=embed)    
+
+@bot.event
+async def on_message(message):
+    if message.author.bot:
+        return
+
+    orbs = load_orbs()
+    user_id = str(message.author.id)
+    
+    if user_id in orbs:
+        orbs[user_id] += 0.1
+    else:
+        orbs[user_id] = 0.1
+    
+    save_orbs(orbs)
+
+@bot.event
+async def on_raw_reaction_add(payload):
+    if payload.guild_id is None:
+        return
+
+    user_id = str(payload.user_id)
+
+    orbs = load_orbs()
+
+    if user_id in orbs:
+        orbs[user_id] += 0.05
+    else:
+        orbs[user_id] = 0.05
+
+    save_orbs(orbs)
 
 
 config = load_config()
