@@ -47,9 +47,9 @@ async def orbs_for_voice():
                 for member in voice_channel.members:
                     user_id = str(member.id)
                     if user_id in orbs:
-                        orbs[user_id] += 0.1
+                        orbs[user_id] += 0.01
                     else:
-                        orbs[user_id] = 0.1
+                        orbs[user_id] = 0.01
         save_orbs(orbs)
         await asyncio.sleep(60)  
 
@@ -1156,11 +1156,11 @@ bot.tree.add_command(orb_group)
 async def orbs_list(interaction: discord.Interaction):
     orbs = load_orbs()
     if not orbs:
-        embed = discord.Embed(title="Classement des orbes [uv]", description="Aucune orbe n'a été gagné 😔.", color=discord.Color.from_rgb(193,168,233 ))
+        embed = discord.Embed(title="Classement des orbes [uv]", description="Aucune orbe n'a été gagné 😔.", color=discord.Color.from_rgb(193, 168, 233))
         await interaction.response.send_message(embed=embed)
         return
 
-    sorted_orbs = sorted(orbs.items(), key=lambda x: (-int(x[1]), x[0]))
+    sorted_orbs = sorted(orbs.items(), key=lambda x: x[1], reverse=True)  # Tri en fonction du nombre d'orbes, du plus grand au plus petit
 
     pages = []
     page_content = ""
@@ -1174,15 +1174,16 @@ async def orbs_list(interaction: discord.Interaction):
             user_name = user.display_name
         else:
             user_name = "Utilisateur Inconnu"
-        page_content += f"**{user_name}** : {int(orbs_count)} <:uvbotorbe:1233831689470607360> \n\n"
+        page_content += f"**{user_name}** : {round(orbs_count, 3)} <:uvbotorbe:1233831689470607360> \n\n"
 
         if index % users_per_page == 0 or index == len(sorted_orbs):
-            pages.append(discord.Embed(title=f"Classement des orbes [uv] ({current_page}/{total_pages})", description=page_content, color=discord.Color.from_rgb(193,168,233)))
+            pages.append(discord.Embed(title=f"Classement des orbes [uv] ({current_page}/{total_pages})", description=page_content, color=discord.Color.from_rgb(193, 168, 233)))
             page_content = ""
             current_page += 1
 
     paginator = Paginator.Simple()
     await paginator.start(interaction, pages=pages)
+
 
 def load_shop():
     with open('shop.json', 'r', encoding='utf-8') as file:
@@ -1283,7 +1284,7 @@ async def orbme(interaction: discord.Interaction, utilisateur: discord.Member = 
         user_id = str(interaction.user.id)
         orbs = load_orbs()
         if user_id in orbs:
-            embed = discord.Embed(description=f"**{interaction.user.display_name}** : {round(orbs[user_id])} <:uvbotorbe:1233831689470607360> ", color=discord.Color.from_rgb(193, 168, 233))
+            embed = discord.Embed(description=f"**{interaction.user.display_name}** : {round(orbs[user_id],3)} <:uvbotorbe:1233831689470607360> ", color=discord.Color.from_rgb(193, 168, 233))
             await interaction.response.send_message(embed=embed)
         else:
             embed = discord.Embed(description=f"❌ **Erreur｜** Vous n'avez aucune orbe.", color=discord.Color.red())
@@ -1348,9 +1349,9 @@ async def on_message(message):
     user_id = str(message.author.id)
     
     if user_id in orbs:
-        orbs[user_id] += 0.1
+        orbs[user_id] += 0.01
     else:
-        orbs[user_id] = 0.1
+        orbs[user_id] = 0.01
     
     save_orbs(orbs)
 
@@ -1364,23 +1365,23 @@ async def on_raw_reaction_add(payload):
     orbs = load_orbs()
 
     if user_id in orbs:
-        orbs[user_id] += 0.05
+        orbs[user_id] += 0.005
     else:
-        orbs[user_id] = 0.05
+        orbs[user_id] = 0.005
 
     save_orbs(orbs)
 
 game_group = app_commands.Group(name="game", description="Commandes liés aux jeux")
 bot.tree.add_command(game_group)
 
-@game_group.command(name="number-guessing",description="Devinez le nombre correct et remportez des orbes")
+@game_group.command(name="number-guessing", description="Devinez le nombre correct et remportez des orbes")
 async def guess_number(interaction: discord.Interaction):
 
     correct_number = random.randint(1, 500)
     
     start_time = time.time()
     participants = []
-    winner = "Aucun"
+    winner = None
     
     embed=discord.Embed(title="🎲 Jeu : deviner le nombre correct", description="Le but du jeu est de trouver le nombre correct entre **1** et **500** en moins de **30 secondes**! Le vainqueur reçoit un nombre d'orbes <:uvbotorbe:1233831689470607360> en fonction du temps pris pour trouver le nombre correct.", color=discord.Color.from_rgb(193, 168, 233))
     embed.add_field(name="Jeu générée par", value=f"{interaction.user.display_name}", inline=True)
@@ -1391,7 +1392,7 @@ async def guess_number(interaction: discord.Interaction):
     def check(message):
         return message.author != bot.user and message.channel == interaction.channel and message.content.isdigit()
 
-    while time.time() - start_time < 30:
+    while time.time() - start_time < 20:
             message = await bot.wait_for('message', check=check) 
             guess = int(message.content)
 
@@ -1402,10 +1403,10 @@ async def guess_number(interaction: discord.Interaction):
                 winner = message.author
                 break
             elif guess < correct_number:
-                embed=discord.Embed(description="⬆️ Le nombre à devenir est plus grand !", color=discord.Color.from_rgb(193, 168, 233))
+                embed=discord.Embed(description="⬆️ Le nombre à deviner est plus grand !", color=discord.Color.from_rgb(193, 168, 233))
                 await interaction.channel.send(embed=embed)
             else:
-                embed=discord.Embed(description="⬇️ Le nombre à devenir est plus petit !", color=discord.Color.from_rgb(193, 168, 233))
+                embed=discord.Embed(description="⬇️ Le nombre à deviner est plus petit !", color=discord.Color.from_rgb(193, 168, 233))
                 await interaction.channel.send(embed=embed)
 
     if winner:
@@ -1415,11 +1416,13 @@ async def guess_number(interaction: discord.Interaction):
                embed.add_field(name="Participant(s)", value=f"{', '.join(participants)}", inline=True)
 
                if round(time.time() - start_time) < 10:
-                  recom  = round(random.uniform(1, 2),2)
+                  recom  = round(random.uniform(0.2, 0.7),3)
                elif round(time.time() - start_time) < 20:
-                  recom  = round(random.uniform(0.5, 1.5),2)
+                  recom  = round(random.uniform(0.05, 0.01),3)
                elif round(time.time() - start_time) < 30:
-                  recom  = round(random.uniform(0.1, 0.3),2)
+                  recom  = round(random.uniform(0.01, 0.03),3)
+               print(recom)
+               print(round(time.time() - start_time))
                embed.add_field(name="Récompense", value=f"{recom} <:uvbotorbe:1233831689470607360>", inline=True)
 
                winner_id = str(winner.id)
@@ -1440,14 +1443,6 @@ async def guess_number(interaction: discord.Interaction):
       embed.add_field(name="Récompense", value="Aucune", inline=True)
       embed.set_footer(text="Ce jeu est pas fou? Les commandes /game permettent de jouer à une belle séléction de jeux super swag")
       await interaction.channel.send(embed=embed)
-
-
-
-    
-
-
-
-
 
 config = load_config()
 token = config['token']
