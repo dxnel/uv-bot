@@ -1383,7 +1383,7 @@ async def guess_number(interaction: discord.Interaction):
     participants = []
     winner = None
     
-    embed=discord.Embed(title="🎲 Jeu : deviner le nombre correct", description="Le but du jeu est de trouver le nombre correct entre **1** et **500** en moins de **30 secondes**! Le vainqueur reçoit un nombre d'orbes <:uvbotorbe:1233831689470607360> en fonction du temps pris pour trouver le nombre correct.", color=discord.Color.from_rgb(193, 168, 233))
+    embed=discord.Embed(title="🎲 Jeu : deviner le nombre correct", description="Le but du jeu est de trouver le nombre correct entre **1** et **500** en moins de **20 secondes**! Le vainqueur reçoit un nombre d'orbes <:uvbotorbe:1233831689470607360> en fonction du temps pris pour trouver le nombre correct.", color=discord.Color.from_rgb(193, 168, 233))
     embed.add_field(name="Jeu générée par", value=f"{interaction.user.display_name}", inline=True)
     embed.set_footer(text="Ce jeu est pas fou? Les commandes /game permettent de jouer à une belle séléction de jeux super swag")
     await interaction.response.send_message(embed=embed)
