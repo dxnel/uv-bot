@@ -1,5 +1,4 @@
 import discord
-import random
 from discord.ext import commands
 from discord import app_commands
 from datetime import datetime
@@ -8,6 +7,7 @@ import time
 import Paginator
 import asyncio
 import json
+import random
 import requests
 import base64
 import re
@@ -24,9 +24,8 @@ intents.guild_messages = True
 
 
 bot = commands.Bot(command_prefix='uv!', intents=intents)
-version = "1.1.0-Beta1 [280424]"
+version = "1.1.0-Beta2 [300424]"
 
-# Charger et sauvegarder les orbs depuis et vers un fichier JSON
 def load_orbs():
     try:
         with open('orbs.json', 'r') as file:
@@ -48,11 +47,11 @@ async def orbs_for_voice():
                 for member in voice_channel.members:
                     user_id = str(member.id)
                     if user_id in orbs:
-                        orbs[user_id] += 0.1
+                        orbs[user_id] += 0.01
                     else:
-                        orbs[user_id] = 0.1
+                        orbs[user_id] = 0.01
         save_orbs(orbs)
-        await asyncio.sleep(60)  # Attendre 60 secondes (1 minute)
+        await asyncio.sleep(60)  
 
     
 @bot.event
@@ -1150,22 +1149,18 @@ async def set_log_channel(interaction: discord.Interaction, salon_textuel: disco
     embed = discord.Embed(description=f"✅** Bravo!｜**" + f"Le salon textuel {salon_textuel.jump_url} a été défini comme salon de logging avec succès." , color=discord.Color.green())
     await interaction.response.send_message(embed=embed)
 
-
-##ORBS
-
 orb_group = app_commands.Group(name="orb", description="Commandes liés aux orbes")
 bot.tree.add_command(orb_group)
 
-@orb_group.command(name="leaderboard", description="Affiche le classement du nombre d'orbes (points) par membre")
+@orb_group.command(name="leaderboard", description="Affiche le classement des membres selon leur nombre d'orbes (points)")
 async def orbs_list(interaction: discord.Interaction):
     orbs = load_orbs()
     if not orbs:
-        embed = discord.Embed(title="Classement des orbes [uv]", description="Aucune orbe n'a été gagné 😔.", color=discord.Color.from_rgb(193,168,233 ))
+        embed = discord.Embed(title="Classement des orbes [uv]", description="Aucune orbe n'a été gagné 😔.", color=discord.Color.from_rgb(193, 168, 233))
         await interaction.response.send_message(embed=embed)
         return
 
-    # Tri des utilisateurs par nombre d'orbes
-    sorted_orbs = sorted(orbs.items(), key=lambda x: (-int(x[1]), x[0]))
+    sorted_orbs = sorted(orbs.items(), key=lambda x: x[1], reverse=True)  # Tri en fonction du nombre d'orbes, du plus grand au plus petit
 
     pages = []
     page_content = ""
@@ -1179,15 +1174,16 @@ async def orbs_list(interaction: discord.Interaction):
             user_name = user.display_name
         else:
             user_name = "Utilisateur Inconnu"
-        page_content += f"**{user_name}** : {int(orbs_count)} <:uvbotorbe:1233831689470607360> \n\n"
+        page_content += f"**{user_name}** : {round(orbs_count, 3)} <:uvbotorbe:1233831689470607360> \n\n"
 
         if index % users_per_page == 0 or index == len(sorted_orbs):
-            pages.append(discord.Embed(title=f"Classement des orbes [uv] ({current_page}/{total_pages})", description=page_content, color=discord.Color.from_rgb(193,168,233)))
+            pages.append(discord.Embed(title=f"Classement des orbes [uv] ({current_page}/{total_pages})", description=page_content, color=discord.Color.from_rgb(193, 168, 233)))
             page_content = ""
             current_page += 1
 
     paginator = Paginator.Simple()
     await paginator.start(interaction, pages=pages)
+
 
 def load_shop():
     with open('shop.json', 'r', encoding='utf-8') as file:
@@ -1204,19 +1200,19 @@ async def shop(interaction: discord.Interaction):
         await interaction.response.send_message(embed=embed)
         return
 
-    # Tri des items par prix
-    sorted_items = sorted(shop_items, key=lambda x: x['price'])
+    sorted_items = sorted(shop_items, key=lambda x: x['price'], reverse=True)
 
     pages = []
     page_content = ""
-    items_per_page = 5
+    items_per_page = 3
     current_page = 1
     total_pages = (len(sorted_items) - 1) // items_per_page + 1
 
     for index, item in enumerate(sorted_items, start=1):
-        page_content += f"**{item['emoji']} {item['name']}** : {item['price']} <:uvbotorbe:1233831689470607360>\n{item['description']}\n\n"
+        page_content += f"**{item['emoji']} {item['name']}**\n **Prix :** {item['price']} <:uvbotorbe:1233831689470607360>\n **Tag :** `{item['tag']}`\n{item['description']}\n\n"
         if index % items_per_page == 0 or index == len(sorted_items):
             embed = discord.Embed(title=f"Magasin ({current_page}/{total_pages})", description=page_content, color=discord.Color.from_rgb(193, 168, 233))
+            embed.set_footer(text="La commande /orb buy [objet_tag] permet l'achat d'un objet.")
             pages.append(embed)
             page_content = ""
             current_page += 1
@@ -1251,15 +1247,71 @@ class CustomRole(discord.ui.Modal, title='Rôle Personnalisé'):
 
         traceback.print_exception(type(error), error, error.__traceback__)
 
+class SendMsgAn(discord.ui.Modal, title='Message à envoyer'):
+
+    text = discord.ui.TextInput(
+        label='Texte',
+        placeholder='puceau moi ? serieusement ^^ haha on me l avait pas sortie celle la depuis loooongtemps :)',
+        required=True,
+        max_length=300,
+        style=discord.TextStyle.long,
+    )
+
+    async def on_submit(self, interaction: discord.Interaction):
+
+        channel = bot.get_channel(1142786171441786910)
+        embed_an = discord.Embed(title=f"😎 Un membre du serveur a quelque-chose à dire...", color=discord.Color.from_rgb(193, 168, 233))
+        embed_an.set_thumbnail(url=interaction.user.avatar)
+        embed_an.add_field(name="Message :", value=f"{self.text.value}", inline=False)
+        embed_an.add_field(name="Signé, ", value=interaction.user.mention + " 🥰")
+        embed_an.set_footer(text="Tu veux envoyer un message super swag comme celui-là? Utilise la commande /orb buy pour acheter ce produit")
+        await channel.send(embed=embed_an)
+
+        embed = discord.Embed(description=f"✅** Bravo!｜**" + "Message envoyé sur " + channel.jump_url , color=discord.Color.green())
+        await interaction.response.send_message(embed=embed)
+
+    async def on_error(self, interaction: discord.Interaction, error: Exception) -> None:
+        embed = discord.Embed(description=f"❌ **Erreur｜** Une erreur inconnue est survenue.", color=discord.Color.red())
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+
+        traceback.print_exception(type(error), error, error.__traceback__)
+
+@orb_group.command(name="me", description="Obtient le nombre d'orbes d'un utilisateur")
+@app_commands.describe(utilisateur="Utilisateur dont vous voulez connaître le nombre d'orbes")
+async def orbme(interaction: discord.Interaction, utilisateur: discord.Member = None):
+    if utilisateur is None:
+
+        user_id = str(interaction.user.id)
+        orbs = load_orbs()
+        if user_id in orbs:
+            embed = discord.Embed(description=f"**{interaction.user.display_name}** : {round(orbs[user_id],3)} <:uvbotorbe:1233831689470607360> ", color=discord.Color.from_rgb(193, 168, 233))
+            await interaction.response.send_message(embed=embed)
+        else:
+            embed = discord.Embed(description=f"❌ **Erreur｜** Vous n'avez aucune orbe.", color=discord.Color.red())
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+    else:
+
+        user_id = str(utilisateur.id)
+        orbs = load_orbs()
+        if user_id in orbs:
+             embed = discord.Embed(title=f"**{utilisateur.display_name}** : {round(orbs[user_id])} <:uvbotorbe:1233831689470607360> ", color=discord.Color.from_rgb(193, 168, 233))
+             await interaction.response.send_message(embed=embed)
+        else:
+            embed = discord.Embed(description=f"❌ **Erreur｜** Cet utilisateur n'a aucune orbe.", color=discord.Color.red())
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+
+
+     
 
 @orb_group.command(name="buy", description="Acheter un objet dans le magasin")
-@app_commands.describe(objet_nom="Nom de l'objet à acheter")
-async def buy_item(interaction: discord.Interaction, objet_nom: str):
+@app_commands.describe(objet_tag="Tag de l'objet à acheter")
+async def buy_item(interaction: discord.Interaction, objet_tag: str):
+    guild = interaction.guild
     shop_items = load_shop()
     
     target_item = None
     for item in shop_items:
-        if item['name'].lower() == objet_nom.lower():
+        if item['tag'].lower() == objet_tag.lower():
             target_item = item
             break
     
@@ -1278,10 +1330,15 @@ async def buy_item(interaction: discord.Interaction, objet_nom: str):
     orbs[user_id] -= target_item['price']
     save_orbs(orbs)
 
-    if target_item['type'] == 'custom-role':
+    if target_item['tag'] == 'role-perso':
         await interaction.response.send_modal(CustomRole())
-        embed = discord.Embed(description=f"✅** Bravo!｜**" + f"Objet {objet_nom} acheté avec succès", color=discord.Color.green())
+        embed = discord.Embed(description=f"✅** Bravo!｜**" + f"Objet {target_item['name']} acheté avec succès", color=discord.Color.green())
         await interaction.response.send_message(embed=embed)    
+
+    if target_item['tag'] == 'annonce-message':
+        await interaction.response.send_modal(SendMsgAn())
+        embed = discord.Embed(description=f"✅** Bravo!｜**" + f"Objet {target_item['name']} acheté avec succès", color=discord.Color.green())
+        await interaction.response.send_message(embed=embed)  
 
 @bot.event
 async def on_message(message):
@@ -1292,9 +1349,9 @@ async def on_message(message):
     user_id = str(message.author.id)
     
     if user_id in orbs:
-        orbs[user_id] += 0.1
+        orbs[user_id] += 0.01
     else:
-        orbs[user_id] = 0.1
+        orbs[user_id] = 0.01
     
     save_orbs(orbs)
 
@@ -1308,12 +1365,84 @@ async def on_raw_reaction_add(payload):
     orbs = load_orbs()
 
     if user_id in orbs:
-        orbs[user_id] += 0.05
+        orbs[user_id] += 0.005
     else:
-        orbs[user_id] = 0.05
+        orbs[user_id] = 0.005
 
     save_orbs(orbs)
 
+game_group = app_commands.Group(name="game", description="Commandes liés aux jeux")
+bot.tree.add_command(game_group)
+
+@game_group.command(name="number-guessing", description="Devinez le nombre correct et remportez des orbes")
+async def guess_number(interaction: discord.Interaction):
+
+    correct_number = random.randint(1, 500)
+    
+    start_time = time.time()
+    participants = []
+    winner = None
+    
+    embed=discord.Embed(title="🎲 Jeu : deviner le nombre correct", description="Le but du jeu est de trouver le nombre correct entre **1** et **500** en moins de **20 secondes**! Le vainqueur reçoit un nombre d'orbes <:uvbotorbe:1233831689470607360> en fonction du temps pris pour trouver le nombre correct.", color=discord.Color.from_rgb(193, 168, 233))
+    embed.add_field(name="Jeu générée par", value=f"{interaction.user.display_name}", inline=True)
+    embed.set_footer(text="Ce jeu est pas fou? Les commandes /game permettent de jouer à une belle séléction de jeux super swag")
+    await interaction.response.send_message(embed=embed)
+    print(correct_number)
+
+    def check(message):
+        return message.author != bot.user and message.channel == interaction.channel and message.content.isdigit()
+
+    while time.time() - start_time < 20:
+            message = await bot.wait_for('message', check=check) 
+            guess = int(message.content)
+
+            if message.author.display_name not in participants:
+                participants.append(message.author.display_name)
+
+            if guess == correct_number:
+                winner = message.author
+                break
+            elif guess < correct_number:
+                embed=discord.Embed(description="⬆️ Le nombre à deviner est plus grand !", color=discord.Color.from_rgb(193, 168, 233))
+                await interaction.channel.send(embed=embed)
+            else:
+                embed=discord.Embed(description="⬇️ Le nombre à deviner est plus petit !", color=discord.Color.from_rgb(193, 168, 233))
+                await interaction.channel.send(embed=embed)
+
+    if winner:
+               embed = discord.Embed(title="😎 Fin du jeu!", description=f"{winner.mention} a trouvé le nombre correct **({correct_number})** !", color=discord.Color.from_rgb(193, 168, 233))
+               embed.add_field(name="Vainqueur", value=f"{winner.mention}", inline=True)
+               embed.add_field(name="Temps de jeu", value=f"{round(time.time() - start_time)} secondes", inline=True)
+               embed.add_field(name="Participant(s)", value=f"{', '.join(participants)}", inline=True)
+
+               if round(time.time() - start_time) < 10:
+                  recom  = round(random.uniform(0.2, 0.7),3)
+               elif round(time.time() - start_time) < 20:
+                  recom  = round(random.uniform(0.05, 0.01),3)
+               elif round(time.time() - start_time) < 30:
+                  recom  = round(random.uniform(0.01, 0.03),3)
+               print(recom)
+               print(round(time.time() - start_time))
+               embed.add_field(name="Récompense", value=f"{recom} <:uvbotorbe:1233831689470607360>", inline=True)
+
+               winner_id = str(winner.id)
+               orbs = load_orbs()
+               if winner_id in orbs:
+                 orbs[winner_id] += recom
+               else:
+                 orbs[winner_id] = recom
+               save_orbs(orbs)
+
+               embed.set_footer(text="Ce jeu est pas fou? Les commandes /game permettent de jouer à une belle séléction de jeux super swag")
+               await interaction.channel.send(embed=embed)
+    else:
+      embed = discord.Embed(title="⏳ Fin du jeu!", description=f"Le temps de jeu a expiré. Personne n'a trouvé le bon nombre à temps 🥺 **({correct_number})**.", color=discord.Color.from_rgb(193, 168, 233))
+      embed.add_field(name="Vainqueur", value="Aucun", inline=True)
+      embed.add_field(name="Temps de jeu", value=f"{round(time.time() - start_time)} secondes", inline=True)
+      embed.add_field(name="Participant(s)", value=f"{', '.join(participants)}", inline=True)
+      embed.add_field(name="Récompense", value="Aucune", inline=True)
+      embed.set_footer(text="Ce jeu est pas fou? Les commandes /game permettent de jouer à une belle séléction de jeux super swag")
+      await interaction.channel.send(embed=embed)
 
 config = load_config()
 token = config['token']
