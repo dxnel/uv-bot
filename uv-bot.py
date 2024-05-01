@@ -24,7 +24,7 @@ intents.guild_messages = True
 
 
 bot = commands.Bot(command_prefix='uv!', intents=intents)
-version = "1.1.0-Beta2 [290424]"
+version = "1.1.0-Beta2 [300424]"
 
 def load_orbs():
     try:
